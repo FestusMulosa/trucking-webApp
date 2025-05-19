@@ -114,9 +114,17 @@ const Login = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <a href="#" className="text-sm text-primary hover:underline">
+                <button
+                  type="button"
+                  className="text-sm text-primary hover:underline"
+                  onClick={() => toast({
+                    title: 'Password Reset',
+                    description: 'Password reset functionality is not yet implemented',
+                    variant: 'info'
+                  })}
+                >
                   Forgot password?
-                </a>
+                </button>
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground">

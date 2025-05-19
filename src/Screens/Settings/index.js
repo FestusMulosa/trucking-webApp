@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useToast } from '../../hooks/use-toast';
 import EmailClient from '../../services/EmailClient';
 import './Settings.css';

@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/use-toast';
 import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import EmailClient from '../../services/EmailClient';
 import {
   Edit,
   ArrowLeft,
-  Truck,
   User,
   MapPin,
   Package,
@@ -24,12 +23,13 @@ const TruckDetails = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [truck, setTruck] = useState(null);
-  const [isEditOpen, setIsEditOpen] = useState(false);
+  // isEditOpen state is used for the Edit Truck button but the EditTruckForm component is not implemented yet
   const [loading, setLoading] = useState(true);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   // Mock data for trucks - in a real app, this would come from an API
-  const trucksData = [
+  // Using useMemo to prevent recreation of the array on each render
+  const trucksData = useMemo(() => [
     {
       id: 1,
       name: 'Truck 001',
@@ -110,7 +110,7 @@ const TruckDetails = () => {
       comesaExpiryDate: '2023-12-25',
       nextMaintenance: '2023-06-05'
     },
-  ];
+  ], []);
 
   // Fetch truck data
   useEffect(() => {
@@ -130,7 +130,7 @@ const TruckDetails = () => {
       }
       setLoading(false);
     }, 500);
-  }, [truckId, navigate, toast]);
+  }, [truckId, navigate, toast, trucksData]);
 
   const handleStatusChange = async (newStatus) => {
     if (!truck) return;
@@ -280,7 +280,17 @@ const TruckDetails = () => {
           </Button>
           <h1 className="text-2xl font-bold">Truck Details</h1>
         </div>
-        <Button onClick={() => setIsEditOpen(true)} className="flex items-center gap-2">
+        <Button
+          onClick={() => {
+            // Edit functionality will be implemented in the future
+            toast({
+              title: 'Feature Coming Soon',
+              description: 'Truck editing functionality is not yet implemented',
+              variant: 'info'
+            });
+          }}
+          className="flex items-center gap-2"
+        >
           <Edit className="h-4 w-4" /> Edit Truck
         </Button>
       </div>

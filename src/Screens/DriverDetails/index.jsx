@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/use-toast';
 import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { UserCheck, UserX, Edit, ArrowLeft, Phone, Mail, MapPin, Truck, Clock } from 'lucide-react';
 import EditDriverForm from '../../components/Drivers/EditDriverForm';
@@ -16,7 +16,8 @@ const DriverDetails = () => {
   const [loading, setLoading] = useState(true);
 
   // Mock data for drivers - in a real app, this would come from an API
-  const driversData = [
+  // Using useMemo to prevent recreation of the array on each render
+  const driversData = useMemo(() => [
     {
       id: 1,
       name: 'John Smith',
@@ -82,7 +83,7 @@ const DriverDetails = () => {
       address: '202 Cedar Ave, Kabwe',
       lastUpdate: '1 day ago'
     }
-  ];
+  ], []);
 
   // Fetch driver data
   useEffect(() => {
