@@ -1,0 +1,212 @@
+.maintenance-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.maintenance-container h1 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.maintenance-tabs {
+  display: flex;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #ddd;
+}
+
+.tab-button {
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 16px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-button:hover {
+  color: #333;
+}
+
+.tab-button.active {
+  color: #1a237e;
+  border-bottom-color: #1a237e;
+}
+
+.maintenance-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.maintenance-table th,
+.maintenance-table td {
+  padding: 15px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.maintenance-table th {
+  background-color: #f9f9f9;
+  font-weight: 600;
+  color: #333;
+}
+
+.maintenance-table tr:last-child td {
+  border-bottom: none;
+}
+
+.maintenance-table tr:hover td {
+  background-color: #f5f5f5;
+}
+
+.status-badge,
+.priority-badge {
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.status-badge.completed {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+}
+
+.status-badge.in-progress {
+  background-color: rgba(33, 150, 243, 0.1);
+  color: #2196F3;
+}
+
+.status-badge.scheduled {
+  background-color: rgba(156, 39, 176, 0.1);
+  color: #9C27B0;
+}
+
+.priority-badge.high {
+  background-color: rgba(244, 67, 54, 0.1);
+  color: #F44336;
+}
+
+.priority-badge.medium {
+  background-color: rgba(255, 152, 0, 0.1);
+  color: #FF9800;
+}
+
+.priority-badge.low {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.action-buttons button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.view-button {
+  background-color: #e3f2fd;
+  color: #2196F3;
+}
+
+.view-button:hover {
+  background-color: #bbdefb;
+}
+
+.edit-button {
+  background-color: #e8f5e9;
+  color: #4CAF50;
+}
+
+.edit-button:hover {
+  background-color: #c8e6c9;
+}
+
+.complete-button {
+  background-color: #e8f5e9;
+  color: #4CAF50;
+}
+
+.complete-button:hover {
+  background-color: #c8e6c9;
+}
+
+.delete-button {
+  background-color: #ffebee;
+  color: #F44336;
+}
+
+.delete-button:hover {
+  background-color: #ffcdd2;
+}
+
+.add-maintenance-button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background-color: #1a237e;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background-color 0.2s;
+}
+
+.add-maintenance-button:hover {
+  background-color: #303f9f;
+}
+
+/* Status row colors */
+.status-completed {
+  background-color: rgba(76, 175, 80, 0.05);
+}
+
+.status-in-progress {
+  background-color: rgba(33, 150, 243, 0.05);
+}
+
+.status-scheduled {
+  background-color: rgba(156, 39, 176, 0.05);
+}
+
+/* Priority row colors */
+.priority-high {
+  background-color: rgba(244, 67, 54, 0.05);
+}
+
+.priority-medium {
+  background-color: rgba(255, 152, 0, 0.05);
+}
+
+.priority-low {
+  background-color: rgba(76, 175, 80, 0.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .maintenance-table {
+    display: block;
+    overflow-x: auto;
+  }
+}

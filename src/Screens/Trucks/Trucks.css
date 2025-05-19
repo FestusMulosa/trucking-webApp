@@ -1,0 +1,612 @@
+.trucks-container {
+  padding: 20px;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+.trucks-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.trucks-title {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.add-truck-btn {
+  padding: 10px 20px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.add-truck-btn:hover {
+  background-color: #45a049;
+}
+
+.trucks-container h1 {
+  margin-bottom: 10px;
+  color: #333;
+  margin-right: 20px;
+}
+
+.active-filter {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.filter-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+  text-transform: capitalize;
+}
+
+.filter-badge.active {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+}
+
+.filter-badge.maintenance {
+  background-color: rgba(255, 152, 0, 0.1);
+  color: #FF9800;
+}
+
+.filter-badge.inactive {
+  background-color: rgba(244, 67, 54, 0.1);
+  color: #F44336;
+}
+
+.clear-filter-btn {
+  padding: 6px 12px;
+  background-color: #f5f5f5;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background-color 0.2s;
+}
+
+.clear-filter-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.no-trucks-message {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  margin: 40px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.no-trucks-message i {
+  font-size: 48px;
+  color: #ccc;
+}
+
+.no-trucks-message p {
+  font-size: 18px;
+  color: #666;
+  margin: 0;
+}
+
+.no-trucks-message .clear-filter-btn {
+  margin-top: 10px;
+  padding: 10px 20px;
+  background-color: #1a237e;
+  color: white;
+}
+
+.truck-list {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  margin-bottom: 30px;
+}
+
+.truck-list-header {
+  display: grid;
+  grid-template-columns: 120px 120px 100px 120px 150px 120px 100px 100px 100px 120px 100px;
+  padding: 10px 15px;
+  font-weight: bold;
+  border-bottom: 2px solid #eee;
+  color: #666;
+  text-align: left;
+}
+
+.truck-list-item {
+  display: grid;
+  grid-template-columns: 120px 120px 10px 120px 150px 120px 100px 100px 100px 120px 100px;
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+  align-items: center;
+  transition: background-color 0.2s;
+  text-align: left;
+  cursor: pointer;
+}
+
+.truck-list-item:hover {
+  background-color: #f9f9f9;
+}
+
+.truck-list-item.active {
+  border-left: 4px solid #4CAF50;
+}
+
+.truck-list-item.maintenance {
+  border-left: 4px solid #FF9800;
+}
+
+.truck-list-item.inactive {
+  border-left: 4px solid #F44336;
+}
+
+.truck-name {
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.truck-plate {
+  font-family: monospace;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #1a237e;
+}
+
+.truck-status {
+  text-align: center;
+}
+
+.truck-driver {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.truck-route {
+  font-weight: 500;
+  color: #1a237e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.truck-cargo {
+  font-size: 14px;
+  color: #555;
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.truck-date {
+  font-size: 14px;
+  color: #555;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.truck-update {
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.truck-actions {
+  display: flex;
+  justify-content: center;
+  text-align: center;
+}
+
+.view-details-btn {
+  padding: 6px 12px;
+  background-color: #1a237e;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background-color 0.2s;
+}
+
+.view-details-btn:hover {
+  background-color: #303f9f;
+}
+
+.status-badge {
+  display: inline-block;
+  width: 80px;
+  text-align: center;
+  font-family: monospace;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #1a237e;
+}
+
+.status-badge.active {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+}
+
+.status-badge.maintenance {
+  background-color: rgba(255, 152, 0, 0.1);
+  color: #FF9800;
+}
+
+.status-badge.inactive {
+  background-color: rgba(244, 67, 54, 0.1);
+  color: #F44336;
+}
+
+.truck-info p {
+  margin: 8px 0;
+  color: #666;
+}
+
+.truck-info i {
+  width: 20px;
+  margin-right: 8px;
+  color: #888;
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.truck-modal {
+  background-color: #fff;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.edit-button {
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background-color 0.2s;
+}
+
+.edit-button:hover {
+  background-color: #0b7dda;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #888;
+}
+
+.close-button:hover {
+  color: #333;
+}
+
+.modal-content {
+  padding: 20px;
+}
+
+.truck-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.detail-group {
+  margin-bottom: 20px;
+}
+
+.detail-group h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  color: #666;
+}
+
+.detail-group p {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.status-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.status-button {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.status-button:hover {
+  opacity: 0.8;
+}
+
+.status-button.selected {
+  opacity: 1;
+}
+
+.status-button.active {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.status-button.maintenance {
+  background-color: #FF9800;
+  color: white;
+}
+
+.status-button.inactive {
+  background-color: #F44336;
+  color: white;
+}
+
+.progress-bar {
+  height: 10px;
+  background-color: #eee;
+  border-radius: 5px;
+  margin-bottom: 5px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #2196F3;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1600px) {
+  .truck-list-header,
+  .truck-list-item {
+    grid-template-columns: 120px 120px 100px 120px 150px 120px 100px 100px 100px 120px;
+  }
+
+  .truck-list-header span:nth-child(11),
+  .truck-list-item span:nth-child(11) {
+    display: none;
+  }
+}
+
+@media (max-width: 1400px) {
+  .truck-list-header,
+  .truck-list-item {
+    grid-template-columns: 120px 120px 100px 120px 150px 120px 100px 100px 120px;
+  }
+
+  .truck-list-header span:nth-child(10),
+  .truck-list-item span:nth-child(10) {
+    display: none;
+  }
+}
+
+@media (max-width: 1200px) {
+  .truck-list-header,
+  .truck-list-item {
+    grid-template-columns: 120px 120px 100px 120px 150px 120px 100px 120px;
+  }
+
+  .truck-list-header span:nth-child(9),
+  .truck-list-item span:nth-child(9) {
+    display: none;
+  }
+}
+
+@media (max-width: 992px) {
+  .truck-list-header,
+  .truck-list-item {
+    grid-template-columns: 120px 120px 100px 120px 150px 120px;
+  }
+
+  .truck-list-header span:nth-child(8),
+  .truck-list-item span:nth-child(8) {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .truck-list-header,
+  .truck-list-item {
+    grid-template-columns: 120px 120px 100px 120px;
+  }
+
+  .truck-list-header span:nth-child(5),
+  .truck-list-item span:nth-child(5),
+  .truck-list-header span:nth-child(6),
+  .truck-list-item span:nth-child(6) {
+    display: none;
+  }
+
+  .truck-details {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 576px) {
+  .truck-list-header,
+  .truck-list-item {
+    grid-template-columns: 120px 120px;
+  }
+
+  .truck-list-header span:nth-child(3),
+  .truck-list-item span:nth-child(3),
+  .truck-list-header span:nth-child(4),
+  .truck-list-item span:nth-child(4) {
+    display: none;
+  }
+
+  .trucks-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .active-filter {
+    margin-top: 10px;
+  }
+
+  .trucks-title {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* Add Truck Form Styles */
+.add-truck-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+}
+
+.form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #555;
+  font-size: 14px;
+}
+
+.form-group input,
+.form-group select {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #1a237e;
+  outline: none;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.cancel-button {
+  padding: 10px 20px;
+  background-color: #f5f5f5;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cancel-button:hover {
+  background-color: #e0e0e0;
+}
+
+.save-button {
+  padding: 10px 20px;
+  background-color: #1a237e;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.save-button:hover {
+  background-color: #303f9f;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+}
