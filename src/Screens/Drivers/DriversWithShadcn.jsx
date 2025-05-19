@@ -109,7 +109,11 @@ const DriversWithShadcn = () => {
     setDrivers([...drivers, newDriverWithId]);
 
     // Show success notification
-    toast.success('Driver Added', `${newDriver.name} has been added to the system`);
+    toast({
+      title: 'Driver Added',
+      description: `${newDriver.name} has been added to the system`,
+      variant: 'success'
+    });
   };
 
   const handleUpdateDriver = (updatedDriver) => {
@@ -128,7 +132,11 @@ const DriversWithShadcn = () => {
     setDrivers(updatedDrivers);
 
     // Show success notification
-    toast.success('Driver Updated', `${updatedDriver.name} has been updated`);
+    toast({
+      title: 'Driver Updated',
+      description: `${updatedDriver.name} has been updated`,
+      variant: 'success'
+    });
   };
 
   const handleStatusChange = (id, newStatus) => {

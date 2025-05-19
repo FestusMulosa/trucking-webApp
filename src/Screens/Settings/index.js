@@ -43,18 +43,34 @@ const Settings = () => {
 
   // Function to test email service
   const handleTestEmail = async () => {
-    toast.info('Sending Test Email', 'Attempting to send a test email...');
+    toast({
+      title: 'Sending Test Email',
+      description: 'Attempting to send a test email...',
+      variant: 'info'
+    });
 
     try {
       const result = await EmailClient.testEmailService();
 
       if (result.success) {
-        toast.success('Email Sent', `Test email sent successfully (ID: ${result.messageId})`);
+        toast({
+          title: 'Email Sent',
+          description: `Test email sent successfully (ID: ${result.messageId})`,
+          variant: 'success'
+        });
       } else {
-        toast.error('Email Failed', `Failed to send test email: ${result.error || 'Unknown error'}`);
+        toast({
+          title: 'Email Failed',
+          description: `Failed to send test email: ${result.error || 'Unknown error'}`,
+          variant: 'destructive'
+        });
       }
     } catch (error) {
-      toast.error('Email Failed', `Error sending test email: ${error.message}`);
+      toast({
+        title: 'Email Failed',
+        description: `Error sending test email: ${error.message}`,
+        variant: 'destructive'
+      });
     }
   };
 
@@ -68,7 +84,11 @@ const Settings = () => {
     });
 
     const newValue = !settings.notifications[setting];
-    toast.info('Settings Updated', `${setting} notifications ${newValue ? 'enabled' : 'disabled'}`);
+    toast({
+      title: 'Settings Updated',
+      description: `${setting} notifications ${newValue ? 'enabled' : 'disabled'}`,
+      variant: 'info'
+    });
   };
 
   const handleDisplayChange = (setting) => {
@@ -83,7 +103,11 @@ const Settings = () => {
     });
 
     const newValue = !settings.display[setting];
-    toast.info('Settings Updated', `${setting} ${newValue ? 'enabled' : 'disabled'}`);
+    toast({
+      title: 'Settings Updated',
+      description: `${setting} ${newValue ? 'enabled' : 'disabled'}`,
+      variant: 'info'
+    });
   };
 
   const handleRefreshRateChange = (value) => {
@@ -95,7 +119,11 @@ const Settings = () => {
       }
     });
 
-    toast.info('Settings Updated', `Refresh rate set to ${value} minutes`);
+    toast({
+      title: 'Settings Updated',
+      description: `Refresh rate set to ${value} minutes`,
+      variant: 'info'
+    });
   };
 
   const handleEmailSettingChange = (setting, value) => {
@@ -113,7 +141,11 @@ const Settings = () => {
 
     // In a real app, this would update the .env file or save to a database
     // For now, we'll just show a notification
-    toast.success('Email Settings Updated', 'Email configuration has been updated successfully');
+    toast({
+      title: 'Email Settings Updated',
+      description: 'Email configuration has been updated successfully',
+      variant: 'success'
+    });
 
     // Here you would typically restart the email service with the new settings
     // or update environment variables
@@ -121,7 +153,11 @@ const Settings = () => {
 
   const handleSaveAccount = (e) => {
     e.preventDefault();
-    toast.success('Account Updated', 'Your account information has been updated successfully');
+    toast({
+      title: 'Account Updated',
+      description: 'Your account information has been updated successfully',
+      variant: 'success'
+    });
   };
 
   return (

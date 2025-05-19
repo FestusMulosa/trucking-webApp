@@ -3,10 +3,10 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Select } from '../../components/ui/select';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
   DialogFooter,
   DialogDescription
@@ -15,7 +15,7 @@ import { useToast } from '../../hooks/use-toast';
 
 const AddDriverForm = ({ isOpen, onClose, onAddDriver }) => {
   const { toast } = useToast();
-  
+
   const [newDriver, setNewDriver] = useState({
     name: '',
     licenseNumber: '',
@@ -39,7 +39,11 @@ const AddDriverForm = ({ isOpen, onClose, onAddDriver }) => {
   const handleAddDriver = () => {
     // Validate form
     if (!newDriver.name || !newDriver.licenseNumber) {
-      toast.error('Validation Error', 'Driver Name and License Number are required');
+      toast({
+        title: 'Validation Error',
+        description: 'Driver Name and License Number are required',
+        variant: 'destructive'
+      });
       return;
     }
 
