@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/use-toast';
+import { useAuth } from '../../context/AuthContext';
 import EmailClient from '../../services/EmailClient';
+import TruckService from '../../services/TruckService';
 import { StatusCard } from '../../components/ui/status-card';
 import { TruckList } from '../../components/ui/truck-list';
 import {
@@ -13,78 +15,107 @@ import {
 } from '../../components/ui/dialog';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
-import { BellIcon } from 'lucide-react';
+import { BellIcon, Loader2 } from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { currentUser, logout } = useAuth();
   const [selectedTruck, setSelectedTruck] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSendingNotification, setIsSendingNotification] = useState(false);
+  const [trucks, setTrucks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch trucks from the API when the component mounts
+  useEffect(() => {
+    const fetchTrucks = async () => {
+      try {
+        setIsLoading(true);
+
+        // Check if user is logged in
+        if (!currentUser) {
+          // Check localStorage as a fallback
+          const storedUser = localStorage.getItem('user');
+          if (!storedUser) {
+            console.log('No user logged in, redirecting to login page');
+            navigate('/login');
+            return;
+          }
+        }
+
+        const data = await TruckService.getTrucks();
+
+        // Format the lastUpdate field for display
+        const formattedTrucks = data.map(truck => {
+          // Calculate a human-readable lastUpdate string
+          let lastUpdateStr = 'Unknown';
+          if (truck.lastUpdate) {
+            const lastUpdateDate = new Date(truck.lastUpdate);
+            const now = new Date();
+            const diffMs = now - lastUpdateDate;
+            const diffMins = Math.floor(diffMs / 60000);
+
+            if (diffMins < 60) {
+              lastUpdateStr = `${diffMins} min ago`;
+            } else if (diffMins < 1440) {
+              const hours = Math.floor(diffMins / 60);
+              lastUpdateStr = `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            } else {
+              const days = Math.floor(diffMins / 1440);
+              lastUpdateStr = `${days} day${days > 1 ? 's' : ''} ago`;
+            }
+          }
+
+          return {
+            ...truck,
+            lastUpdate: lastUpdateStr
+          };
+        });
+
+        setTrucks(formattedTrucks);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching trucks:', err);
+
+        // Handle authentication errors
+        if (err.message === 'Invalid token' ||
+            err.message === 'Authentication required' ||
+            err.message === 'Token expired') {
+
+          console.error('Authentication error details:', err);
+
+          toast({
+            title: 'Authentication Error',
+            description: 'Your session has expired. Please log in again.',
+            variant: 'destructive'
+          });
+
+          // Log the user out and redirect to login
+          logout();
+          navigate('/login');
+          return;
+        }
+
+        setError('Failed to load trucks. Please try again later.');
+        toast({
+          title: 'Error',
+          description: 'Failed to load trucks. Please try again later.',
+          variant: 'destructive'
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTrucks();
+  }, [toast, navigate, currentUser, logout]);
 
   const handleTruckClick = (truck) => {
     setSelectedTruck(truck);
     setIsModalOpen(true);
   };
-
-  // Mock data for trucks - in a real app, this would come from an API
-  const trucks = [
-    {
-      id: 1,
-      name: 'Truck 001',
-      numberPlate: 'ABC 123 ZM',
-      status: 'active',
-      route: 'Lusaka-Solwezi',
-      cargoType: 'Fuel',
-      lastUpdate: '10 min ago',
-      fitnessDate: '2023-11-30',
-      comesaExpiryDate: '2023-12-10'
-    },
-    {
-      id: 2,
-      name: 'Truck 002',
-      numberPlate: 'DEF 456 ZM',
-      status: 'maintenance',
-      route: 'Service Center',
-      cargoType: 'Construction',
-      lastUpdate: '2 hours ago',
-      fitnessDate: '2023-09-20',
-      comesaExpiryDate: '2023-10-15'
-    },
-    {
-      id: 3,
-      name: 'Truck 003',
-      numberPlate: 'GHI 789 ZM',
-      status: 'inactive',
-      route: 'Warehouse',
-      cargoType: 'Agricultural',
-      lastUpdate: '1 day ago',
-      fitnessDate: '2024-01-10',
-      comesaExpiryDate: '2024-02-20'
-    },
-    {
-      id: 4,
-      name: 'Truck 004',
-      numberPlate: 'JKL 012 ZM',
-      status: 'active',
-      route: 'Ndola-Kitwe',
-      cargoType: 'Mining',
-      lastUpdate: '5 min ago',
-      fitnessDate: '2023-10-25',
-      comesaExpiryDate: '2023-11-05'
-    },
-    {
-      id: 5,
-      name: 'Truck 005',
-      numberPlate: 'MNO 345 ZM',
-      status: 'active',
-      route: 'Lusaka-Livingstone',
-      cargoType: 'Consumer Goods',
-      lastUpdate: '15 min ago',
-      fitnessDate: '2023-11-15',
-      comesaExpiryDate: '2023-12-25'
-    },
-  ];
 
   // Function to send fitness expiry notifications
   const sendFitnessExpiryNotifications = async () => {
@@ -104,6 +135,9 @@ const Dashboard = () => {
       thirtyDaysFromNow.setDate(today.getDate() + 30);
 
       const trucksWithExpiringFitness = trucks.filter(truck => {
+        // Skip trucks without fitness date
+        if (!truck.fitnessDate) return false;
+
         const fitnessDate = new Date(truck.fitnessDate);
         const isExpiring = fitnessDate <= thirtyDaysFromNow;
         console.log(`Truck ${truck.name} fitness date: ${fitnessDate.toLocaleDateString()}, is expiring: ${isExpiring}`);
@@ -168,7 +202,7 @@ const Dashboard = () => {
         <h1 className="text-2xl font-bold">Fleet Dashboard</h1>
         <Button
           onClick={sendFitnessExpiryNotifications}
-          disabled={isSendingNotification}
+          disabled={isSendingNotification || isLoading}
           className="flex items-center gap-2"
         >
           <BellIcon className="h-4 w-4" />
@@ -204,8 +238,28 @@ const Dashboard = () => {
         />
       </div>
 
-      {/* Truck List */}
-      <TruckList trucks={trucks} onTruckClick={handleTruckClick} />
+      {/* Loading State */}
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+          <p className="text-muted-foreground">Loading trucks...</p>
+        </div>
+      ) : error ? (
+        <div className="bg-destructive/10 text-destructive p-4 rounded-md mb-6">
+          <p>{error}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-2"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </Button>
+        </div>
+      ) : (
+        /* Truck List */
+        <TruckList trucks={trucks} onTruckClick={handleTruckClick} />
+      )}
 
       {/* Truck Details Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -225,11 +279,11 @@ const Dashboard = () => {
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Route</p>
-                <p>{selectedTruck.route}</p>
+                <p>{selectedTruck.route || 'N/A'}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Last Update</p>
-                <p>{selectedTruck.lastUpdate}</p>
+                <p>{selectedTruck.lastUpdate || 'N/A'}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Cargo Type</p>

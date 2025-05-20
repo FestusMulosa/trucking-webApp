@@ -30,34 +30,7 @@ const Login = () => {
 
     setIsLoading(true);
 
-    // For development/testing purposes, allow direct login with hardcoded credentials
-    if (email === 'admin@example.com' && password === 'password123') {
-      // Mock successful login
-      const mockUser = {
-        id: 1,
-        firstName: 'Admin',
-        lastName: 'User',
-        email: 'admin@example.com',
-        role: 'admin',
-        companyId: 1
-      };
-
-      // Store user in localStorage
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      localStorage.setItem('token', 'mock-jwt-token');
-
-      // Show success message
-      toast({
-        title: 'Login Successful',
-        description: 'Welcome back!',
-        variant: 'success'
-      });
-
-      // Navigate to dashboard
-      navigate('/');
-      setIsLoading(false);
-      return;
-    }
+    // No special handling for hardcoded credentials - use the real API for all logins
 
     try {
       await login(email, password);

@@ -9,7 +9,7 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const toast = useToast();
+  const { toast } = useToast();
   const { currentUser, logout } = useAuth();
 
   const toggleMenu = () => {
