@@ -1,97 +1,94 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/use-toast';
+import { useAuth } from '../../context/AuthContext';
 import EmailClient from '../../services/EmailClient';
+import TruckService from '../../services/TruckService';
 import './Trucks.css';
 
 const Trucks = () => {
   const { statusFilter } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { logout } = useAuth();
 
-  // Mock data for trucks - in a real app, this would come from an API
-  const [trucks, setTrucks] = useState([
-    {
-      id: 1,
-      name: 'Truck 001',
-      numberPlate: 'ABC 123 ZM',
-      status: 'active',
-      route: 'Lusaka-Solwezi',
-      cargoType: 'Fuel',
-      lastUpdate: '10 min ago',
-      driver: 'John Smith',
-      driverId: 1,
-      roadTaxDate: '2023-12-15',
-      insuranceDate: '2024-01-20',
-      fitnessDate: '2023-11-30',
-      comesaExpiryDate: '2023-12-10',
-      nextMaintenance: '2023-06-15'
-    },
-    {
-      id: 2,
-      name: 'Truck 002',
-      numberPlate: 'DEF 456 ZM',
-      status: 'maintenance',
-      route: 'Service Center',
-      cargoType: 'Construction',
-      lastUpdate: '2 hours ago',
-      driver: 'Emily Johnson',
-      driverId: 2,
-      roadTaxDate: '2023-10-05',
-      insuranceDate: '2023-11-15',
-      fitnessDate: '2023-09-20',
-      comesaExpiryDate: '2023-10-15',
-      nextMaintenance: '2023-05-20'
-    },
-    {
-      id: 3,
-      name: 'Truck 003',
-      numberPlate: 'GHI 789 ZM',
-      status: 'inactive',
-      route: 'Warehouse',
-      cargoType: 'Agricultural',
-      lastUpdate: '1 day ago',
-      driver: 'Unassigned',
-      driverId: null,
-      roadTaxDate: '2024-02-28',
-      insuranceDate: '2024-03-15',
-      fitnessDate: '2024-01-10',
-      comesaExpiryDate: '2024-02-20',
-      nextMaintenance: '2023-07-10'
-    },
-    {
-      id: 4,
-      name: 'Truck 004',
-      numberPlate: 'JKL 012 ZM',
-      status: 'active',
-      route: 'Ndola-Kitwe',
-      cargoType: 'Mining',
-      lastUpdate: '5 min ago',
-      driver: 'Michael Brown',
-      driverId: 3,
-      roadTaxDate: '2023-11-10',
-      insuranceDate: '2023-12-05',
-      fitnessDate: '2023-10-25',
-      comesaExpiryDate: '2023-11-05',
-      nextMaintenance: '2023-06-30'
-    },
-    {
-      id: 5,
-      name: 'Truck 005',
-      numberPlate: 'MNO 345 ZM',
-      status: 'active',
-      route: 'Lusaka-Livingstone',
-      cargoType: 'Consumer Goods',
-      lastUpdate: '15 min ago',
-      driver: 'Sarah Davis',
-      driverId: 4,
-      roadTaxDate: '2024-01-05',
-      insuranceDate: '2023-12-20',
-      fitnessDate: '2023-11-15',
-      comesaExpiryDate: '2023-12-25',
-      nextMaintenance: '2023-06-05'
-    },
-  ]);
+  // State for trucks and loading/error status
+  const [trucks, setTrucks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch trucks from the API when the component mounts
+  useEffect(() => {
+    const fetchTrucks = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const data = await TruckService.getTrucks();
+
+        // Format the lastUpdate field for display
+        const formattedTrucks = data.map(truck => {
+          // Calculate a human-readable lastUpdate string
+          let lastUpdateStr = 'Unknown';
+          if (truck.lastUpdate) {
+            const lastUpdateDate = new Date(truck.lastUpdate);
+            const now = new Date();
+            const diffMs = now - lastUpdateDate;
+            const diffMins = Math.floor(diffMs / 60000);
+
+            if (diffMins < 60) {
+              lastUpdateStr = `${diffMins} min ago`;
+            } else if (diffMins < 1440) {
+              const hours = Math.floor(diffMins / 60);
+              lastUpdateStr = `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            } else {
+              const days = Math.floor(diffMins / 1440);
+              lastUpdateStr = `${days} day${days > 1 ? 's' : ''} ago`;
+            }
+          }
+
+          return {
+            ...truck,
+            lastUpdate: lastUpdateStr
+          };
+        });
+
+        setTrucks(formattedTrucks);
+      } catch (err) {
+        console.error('Error fetching trucks:', err);
+
+        // Handle authentication errors
+        if (err.message === 'Invalid token' ||
+            err.message === 'Authentication required' ||
+            err.message === 'Token expired') {
+
+          console.error('Authentication error details:', err);
+
+          toast({
+            title: 'Authentication Error',
+            description: 'Your session has expired. Please log in again.',
+            variant: 'destructive'
+          });
+
+          // Log the user out and redirect to login
+          logout();
+          navigate('/login');
+          return;
+        }
+
+        setError('Failed to load trucks. Please try again later.');
+        toast({
+          title: 'Error',
+          description: 'Failed to load trucks. Please try again later.',
+          variant: 'destructive'
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTrucks();
+  }, [toast, navigate, logout]);
 
   const [selectedTruck, setSelectedTruck] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -190,7 +187,7 @@ const Trucks = () => {
     });
   };
 
-  const handleAddTruck = () => {
+  const handleAddTruck = async () => {
     // Validate form
     if (!newTruck.name || !newTruck.route || !newTruck.numberPlate) {
       toast({
@@ -201,28 +198,65 @@ const Trucks = () => {
       return;
     }
 
-    // Create new truck with ID and lastUpdate
-    const newTruckWithId = {
-      ...newTruck,
-      id: trucks.length + 1,
-      lastUpdate: 'Just now'
-    };
+    try {
+      // Set lastUpdate to current date
+      const truckToAdd = {
+        ...newTruck,
+        lastUpdate: new Date().toISOString()
+      };
 
-    // Add the new truck to the list
-    setTrucks([...trucks, newTruckWithId]);
+      // Call the API to create the truck
+      const createdTruck = await TruckService.createTruck(truckToAdd);
 
-    // Show success notification
-    toast({
-      title: 'Truck Added',
-      description: `${newTruck.name} has been added to the fleet`,
-      variant: 'success'
-    });
+      // Format the lastUpdate for display
+      const lastUpdateStr = 'Just now';
 
-    // Close the modal
-    closeAddModal();
+      // Add the new truck to the list with formatted lastUpdate
+      const truckWithFormattedDate = {
+        ...createdTruck,
+        lastUpdate: lastUpdateStr
+      };
+
+      setTrucks([...trucks, truckWithFormattedDate]);
+
+      // Show success notification
+      toast({
+        title: 'Truck Added',
+        description: `${newTruck.name} has been added to the fleet`,
+        variant: 'success'
+      });
+
+      // Close the modal
+      closeAddModal();
+    } catch (error) {
+      console.error('Error adding truck:', error);
+
+      // Handle authentication errors
+      if (error.message === 'Invalid token' ||
+          error.message === 'Authentication required' ||
+          error.message === 'Token expired') {
+
+        toast({
+          title: 'Authentication Error',
+          description: 'Your session has expired. Please log in again.',
+          variant: 'destructive'
+        });
+
+        // Log the user out and redirect to login
+        logout();
+        navigate('/login');
+        return;
+      }
+
+      toast({
+        title: 'Error',
+        description: `Failed to add truck: ${error.message || 'Unknown error'}`,
+        variant: 'destructive'
+      });
+    }
   };
 
-  const handleUpdateTruck = () => {
+  const handleUpdateTruck = async () => {
     // Validate form
     if (!editTruck.name || !editTruck.route || !editTruck.numberPlate) {
       toast({
@@ -233,97 +267,181 @@ const Trucks = () => {
       return;
     }
 
-    // Update the truck in the list
-    const updatedTrucks = trucks.map(truck => {
-      if (truck.id === editTruck.id) {
-        return {
-          ...editTruck,
-          lastUpdate: 'Just now'
-        };
+    try {
+      // Set lastUpdate to current date
+      const truckToUpdate = {
+        ...editTruck,
+        lastUpdate: new Date().toISOString()
+      };
+
+      // Call the API to update the truck
+      await TruckService.updateTruck(editTruck.id, truckToUpdate);
+
+      // Update the truck in the local list
+      const updatedTrucks = trucks.map(truck => {
+        if (truck.id === editTruck.id) {
+          return {
+            ...truckToUpdate,
+            lastUpdate: 'Just now'
+          };
+        }
+        return truck;
+      });
+
+      // Update the trucks state
+      setTrucks(updatedTrucks);
+
+      // If we're in a filtered view, update the filtered trucks list
+      if (activeFilter) {
+        setFilteredTrucks(updatedTrucks.filter(truck => truck.status === activeFilter));
       }
-      return truck;
-    });
 
-    // Update the trucks state
-    setTrucks(updatedTrucks);
+      // Show success notification
+      toast({
+        title: 'Truck Updated',
+        description: `${editTruck.name} has been updated`,
+        variant: 'success'
+      });
 
-    // If we're in a filtered view, update the filtered trucks list
-    if (activeFilter) {
-      setFilteredTrucks(updatedTrucks.filter(truck => truck.status === activeFilter));
+      // Close the modal
+      closeEditModal();
+    } catch (error) {
+      console.error('Error updating truck:', error);
+
+      // Handle authentication errors
+      if (error.message === 'Invalid token' ||
+          error.message === 'Authentication required' ||
+          error.message === 'Token expired') {
+
+        toast({
+          title: 'Authentication Error',
+          description: 'Your session has expired. Please log in again.',
+          variant: 'destructive'
+        });
+
+        // Log the user out and redirect to login
+        logout();
+        navigate('/login');
+        return;
+      }
+
+      toast({
+        title: 'Error',
+        description: `Failed to update truck: ${error.message || 'Unknown error'}`,
+        variant: 'destructive'
+      });
     }
-
-    // Show success notification
-    toast({
-      title: 'Truck Updated',
-      description: `${editTruck.name} has been updated`,
-      variant: 'success'
-    });
-
-    // Close the modal
-    closeEditModal();
   };
 
-  const handleStatusChange = (id, newStatus) => {
-    const updatedTrucks = trucks.map(truck => {
-      if (truck.id === id) {
-        const oldStatus = truck.status;
-        const updatedTruck = { ...truck, status: newStatus };
-
-        // Show notification based on status change
-        if (newStatus === 'active') {
-          toast({
-            title: 'Status Updated',
-            description: `${truck.name} is now active`,
-            variant: 'success'
-          });
-        } else if (newStatus === 'maintenance') {
-          toast({
-            title: 'Status Updated',
-            description: `${truck.name} is now in maintenance`,
-            variant: 'warning'
-          });
-        } else if (newStatus === 'inactive') {
-          toast({
-            title: 'Status Updated',
-            description: `${truck.name} is now inactive`,
-            variant: 'info'
-          });
-        }
-
-        // Send email notification if email notifications are enabled
-        if (EmailClient.isEnabled && EmailClient.settings.statusChanges) {
-          EmailClient.sendStatusChangeEmail({
-            to: process.env.REACT_APP_DEFAULT_RECIPIENT,
-            truckId: truck.name,
-            oldStatus,
-            newStatus
-          }).then(result => {
-            if (result.success) {
-              console.log(`Status change email sent for ${truck.name}`);
-            } else {
-              console.error(`Failed to send status change email for ${truck.name}:`, result.error || result.message);
-            }
-          }).catch(error => {
-            console.error(`Error sending status change email for ${truck.name}:`, error);
-          });
-        }
-
-        return updatedTruck;
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      // Find the truck to update
+      const truckToUpdate = trucks.find(truck => truck.id === id);
+      if (!truckToUpdate) {
+        console.error(`Truck with ID ${id} not found`);
+        return;
       }
-      return truck;
-    });
 
-    setTrucks(updatedTrucks);
+      const oldStatus = truckToUpdate.status;
 
-    // If the modal is open and we're changing the selected truck's status
-    if (selectedTruck && selectedTruck.id === id) {
-      setSelectedTruck({ ...selectedTruck, status: newStatus });
-    }
+      // Prepare the update data
+      const updateData = {
+        ...truckToUpdate,
+        status: newStatus,
+        lastUpdate: new Date().toISOString()
+      };
 
-    // If we're in a filtered view and the truck's status no longer matches the filter,
-    // update the filtered trucks list
-    if (activeFilter) {
-      setFilteredTrucks(updatedTrucks.filter(truck => truck.status === activeFilter));
+      // Call the API to update the truck
+      await TruckService.updateTruck(id, updateData);
+
+      // Update the local state
+      const updatedTrucks = trucks.map(truck => {
+        if (truck.id === id) {
+          return {
+            ...truck,
+            status: newStatus,
+            lastUpdate: 'Just now'
+          };
+        }
+        return truck;
+      });
+
+      setTrucks(updatedTrucks);
+
+      // If the modal is open and we're changing the selected truck's status
+      if (selectedTruck && selectedTruck.id === id) {
+        setSelectedTruck({ ...selectedTruck, status: newStatus });
+      }
+
+      // If we're in a filtered view and the truck's status no longer matches the filter,
+      // update the filtered trucks list
+      if (activeFilter) {
+        setFilteredTrucks(updatedTrucks.filter(truck => truck.status === activeFilter));
+      }
+
+      // Show notification based on status change
+      if (newStatus === 'active') {
+        toast({
+          title: 'Status Updated',
+          description: `${truckToUpdate.name} is now active`,
+          variant: 'success'
+        });
+      } else if (newStatus === 'maintenance') {
+        toast({
+          title: 'Status Updated',
+          description: `${truckToUpdate.name} is now in maintenance`,
+          variant: 'warning'
+        });
+      } else if (newStatus === 'inactive') {
+        toast({
+          title: 'Status Updated',
+          description: `${truckToUpdate.name} is now inactive`,
+          variant: 'info'
+        });
+      }
+
+      // Send email notification if email notifications are enabled
+      if (EmailClient.isEnabled && EmailClient.settings.statusChanges) {
+        EmailClient.sendStatusChangeEmail({
+          to: process.env.REACT_APP_DEFAULT_RECIPIENT,
+          truckId: truckToUpdate.name,
+          oldStatus,
+          newStatus
+        }).then(result => {
+          if (result.success) {
+            console.log(`Status change email sent for ${truckToUpdate.name}`);
+          } else {
+            console.error(`Failed to send status change email for ${truckToUpdate.name}:`, result.error || result.message);
+          }
+        }).catch(error => {
+          console.error(`Error sending status change email for ${truckToUpdate.name}:`, error);
+        });
+      }
+    } catch (error) {
+      console.error('Error updating truck status:', error);
+
+      // Handle authentication errors
+      if (error.message === 'Invalid token' ||
+          error.message === 'Authentication required' ||
+          error.message === 'Token expired') {
+
+        toast({
+          title: 'Authentication Error',
+          description: 'Your session has expired. Please log in again.',
+          variant: 'destructive'
+        });
+
+        // Log the user out and redirect to login
+        logout();
+        navigate('/login');
+        return;
+      }
+
+      toast({
+        title: 'Error',
+        description: `Failed to update truck status: ${error.message || 'Unknown error'}`,
+        variant: 'destructive'
+      });
     }
   };
 
@@ -337,7 +455,11 @@ const Trucks = () => {
       <div className="trucks-header">
         <div className="trucks-title">
           <h1>Truck Fleet</h1>
-          <button className="add-truck-btn" onClick={() => setIsAddModalOpen(true)}>
+          <button
+            className="add-truck-btn"
+            onClick={() => setIsAddModalOpen(true)}
+            disabled={isLoading}
+          >
             <i className="fas fa-plus"></i> Add New Truck
           </button>
         </div>
@@ -354,7 +476,23 @@ const Trucks = () => {
         )}
       </div>
 
-      {(activeFilter && filteredTrucks.length === 0) ? (
+      {isLoading ? (
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading trucks...</p>
+        </div>
+      ) : error ? (
+        <div className="error-container">
+          <i className="fas fa-exclamation-triangle"></i>
+          <p>{error}</p>
+          <button
+            className="retry-btn"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </button>
+        </div>
+      ) : (activeFilter && filteredTrucks.length === 0) ? (
         <div className="no-trucks-message">
           <i className="fas fa-truck"></i>
           <p>No {activeFilter} trucks found</p>
@@ -391,13 +529,13 @@ const Trucks = () => {
                   {truck.status}
                 </span>
               </span>
-              <span className="truck-driver">{truck.driver}</span>
-              <span className="truck-route">{truck.route}</span>
-              <span className="truck-cargo">{truck.cargoType}</span>
-              <span className="truck-date">{new Date(truck.roadTaxDate).toLocaleDateString()}</span>
-              <span className="truck-date">{new Date(truck.insuranceDate).toLocaleDateString()}</span>
-              <span className="truck-date">{new Date(truck.fitnessDate).toLocaleDateString()}</span>
-              <span className="truck-date">{new Date(truck.comesaExpiryDate).toLocaleDateString()}</span>
+              <span className="truck-driver">{truck.driver || 'Unassigned'}</span>
+              <span className="truck-route">{truck.route || 'N/A'}</span>
+              <span className="truck-cargo">{truck.cargoType || 'N/A'}</span>
+              <span className="truck-date">{truck.roadTaxDate ? new Date(truck.roadTaxDate).toLocaleDateString() : 'N/A'}</span>
+              <span className="truck-date">{truck.insuranceDate ? new Date(truck.insuranceDate).toLocaleDateString() : 'N/A'}</span>
+              <span className="truck-date">{truck.fitnessDate ? new Date(truck.fitnessDate).toLocaleDateString() : 'N/A'}</span>
+              <span className="truck-date">{truck.comesaExpiryDate ? new Date(truck.comesaExpiryDate).toLocaleDateString() : 'N/A'}</span>
               <span className="truck-update">{truck.lastUpdate}</span>
               <span className="truck-actions">
                 {/* <button
