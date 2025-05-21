@@ -3,10 +3,10 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Select } from '../../components/ui/select';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
   DialogFooter,
   DialogDescription
@@ -37,8 +37,12 @@ const EditDriverForm = ({ isOpen, onClose, onUpdateDriver, driver }) => {
 
   const handleUpdateDriver = () => {
     // Validate form
-    if (!editDriver.name || !editDriver.licenseNumber) {
-      toast.error('Validation Error', 'Driver Name and License Number are required');
+    if (!editDriver.name || !editDriver.licenseNumber || !editDriver.licenseExpiry) {
+      toast({
+        title: 'Validation Error',
+        description: 'Driver Name, License Number, and License Expiry Date are required',
+        variant: 'destructive'
+      });
       return;
     }
 
@@ -83,6 +87,31 @@ const EditDriverForm = ({ isOpen, onClose, onUpdateDriver, driver }) => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
+              <Label htmlFor="edit-licenseExpiry">License Expiry Date*</Label>
+              <Input
+                id="edit-licenseExpiry"
+                name="licenseExpiry"
+                type="date"
+                value={editDriver.licenseExpiry ? editDriver.licenseExpiry.split('T')[0] : ''}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-status">Status</Label>
+              <Select
+                id="edit-status"
+                name="status"
+                value={editDriver.status}
+                onChange={handleInputChange}
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="on_leave">On Leave</option>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label htmlFor="edit-phone">Phone</Label>
               <Input
                 id="edit-phone"
@@ -104,29 +133,15 @@ const EditDriverForm = ({ isOpen, onClose, onUpdateDriver, driver }) => {
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-status">Status</Label>
-              <Select
-                id="edit-status"
-                name="status"
-                value={editDriver.status}
-                onChange={handleInputChange}
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-experience">Experience</Label>
-              <Input
-                id="edit-experience"
-                name="experience"
-                value={editDriver.experience}
-                onChange={handleInputChange}
-                placeholder="e.g. 5 years"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-experience">Experience</Label>
+            <Input
+              id="edit-experience"
+              name="experience"
+              value={editDriver.experience}
+              onChange={handleInputChange}
+              placeholder="e.g. 5 years"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-address">Address</Label>

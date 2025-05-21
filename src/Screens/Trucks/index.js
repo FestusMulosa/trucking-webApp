@@ -108,7 +108,8 @@ const Trucks = () => {
     insuranceDate: '',
     fitnessDate: '',
     comesaExpiryDate: '',
-    nextMaintenance: ''
+    nextMaintenance: '',
+    companyId: 1 // Set default company ID
   });
   const [editTruck, setEditTruck] = useState(null);
 
@@ -156,7 +157,8 @@ const Trucks = () => {
       insuranceDate: '',
       fitnessDate: '',
       comesaExpiryDate: '',
-      nextMaintenance: ''
+      nextMaintenance: '',
+      companyId: 1 // Set default company ID
     });
   };
 
@@ -199,10 +201,11 @@ const Trucks = () => {
     }
 
     try {
-      // Set lastUpdate to current date
+      // Set lastUpdate to current date and ensure companyId is set
       const truckToAdd = {
         ...newTruck,
-        lastUpdate: new Date().toISOString()
+        lastUpdate: new Date().toISOString(),
+        companyId: newTruck.companyId || 1
       };
 
       // Call the API to create the truck
@@ -268,10 +271,11 @@ const Trucks = () => {
     }
 
     try {
-      // Set lastUpdate to current date
+      // Set lastUpdate to current date and ensure companyId is set
       const truckToUpdate = {
         ...editTruck,
-        lastUpdate: new Date().toISOString()
+        lastUpdate: new Date().toISOString(),
+        companyId: editTruck.companyId || 1
       };
 
       // Call the API to update the truck
@@ -348,7 +352,8 @@ const Trucks = () => {
       const updateData = {
         ...truckToUpdate,
         status: newStatus,
-        lastUpdate: new Date().toISOString()
+        lastUpdate: new Date().toISOString(),
+        companyId: truckToUpdate.companyId || 1
       };
 
       // Call the API to update the truck

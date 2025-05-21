@@ -5,6 +5,9 @@
 // API base URL - pointing to the dedicated server
 const API_BASE_URL = (process.env.REACT_APP_API_URL || 'https://trucking-server.onrender.com') + '/api';
 
+// Log the API URL for debugging
+console.log('TruckService API URL:', API_BASE_URL);
+
 /**
  * Get the authentication token from local storage
  * @returns {string|null} The authentication token or null if not found
@@ -105,14 +108,42 @@ const createTruck = async (truck) => {
       throw new Error('Authentication required');
     }
 
+    // Log the request details for debugging
+    console.log('Creating truck with data:', truck);
+    console.log('API URL:', `${API_BASE_URL}/trucks`);
+
+    // Make sure companyId is set (required by the server)
+    const truckWithCompany = {
+      ...truck,
+      companyId: truck.companyId || 1 // Default to company ID 1 if not provided
+    };
+
     const response = await fetch(`${API_BASE_URL}/trucks`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(truck),
+      body: JSON.stringify(truckWithCompany),
     });
+
+    console.log('Create truck response status:', response.status);
+
+    // Handle 404 errors specifically
+    if (response.status === 404) {
+      console.error('API endpoint not found (404):', `${API_BASE_URL}/trucks`);
+      throw new Error('API endpoint not found. The server might be down or the API endpoint might have changed.');
+    }
+
+    // Check if the response is JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.error('Server returned non-JSON response:', contentType);
+      // Try to get the text response for debugging
+      const textResponse = await response.text();
+      console.error('Response text:', textResponse);
+      throw new Error('Server returned non-JSON response. The server might be down or not properly configured.');
+    }
 
     const data = await response.json();
 
@@ -124,6 +155,7 @@ const createTruck = async (truck) => {
       throw new Error(data.message || 'Failed to create truck');
     }
 
+    console.log('Truck created successfully:', data);
     return data;
   } catch (error) {
     console.error('Failed to create truck:', error);
@@ -144,14 +176,42 @@ const updateTruck = async (id, updates) => {
       throw new Error('Authentication required');
     }
 
+    // Log the request details for debugging
+    console.log(`Updating truck ${id} with data:`, updates);
+    console.log('API URL:', `${API_BASE_URL}/trucks/${id}`);
+
+    // Make sure companyId is set (required by the server)
+    const updatesWithCompany = {
+      ...updates,
+      companyId: updates.companyId || 1 // Default to company ID 1 if not provided
+    };
+
     const response = await fetch(`${API_BASE_URL}/trucks/${id}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(updates),
+      body: JSON.stringify(updatesWithCompany),
     });
+
+    console.log('Update truck response status:', response.status);
+
+    // Handle 404 errors specifically
+    if (response.status === 404) {
+      console.error('API endpoint not found (404):', `${API_BASE_URL}/trucks/${id}`);
+      throw new Error('API endpoint not found. The server might be down or the API endpoint might have changed.');
+    }
+
+    // Check if the response is JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.error('Server returned non-JSON response:', contentType);
+      // Try to get the text response for debugging
+      const textResponse = await response.text();
+      console.error('Response text:', textResponse);
+      throw new Error('Server returned non-JSON response. The server might be down or not properly configured.');
+    }
 
     const data = await response.json();
 
@@ -163,6 +223,7 @@ const updateTruck = async (id, updates) => {
       throw new Error(data.message || 'Failed to update truck');
     }
 
+    console.log('Truck updated successfully:', data);
     return data;
   } catch (error) {
     console.error('Failed to update truck:', error);
