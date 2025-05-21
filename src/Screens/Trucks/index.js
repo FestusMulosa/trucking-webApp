@@ -525,7 +525,6 @@ const Trucks = () => {
             <span className="truck-date">Fitness</span>
             <span className="truck-date">COMESA</span>
             <span className="truck-update">Last Update</span>
-            <span className="truck-actions">Actions</span>
           </div>
           {(activeFilter ? filteredTrucks : trucks).map(truck => (
             <div
@@ -549,12 +548,7 @@ const Trucks = () => {
               <span className="truck-date">{truck.comesaExpiryDate ? new Date(truck.comesaExpiryDate).toLocaleDateString() : 'N/A'}</span>
               <span className="truck-update">{truck.lastUpdate}</span>
               <span className="truck-actions">
-                <button
-                  className="view-maintenance-btn"
-                  onClick={(e) => handleViewMaintenance(e, truck)}
-                >
-                  <i className="fas fa-tools"></i> Maintenance
-                </button>
+               
               </span>
             </div>
           ))}

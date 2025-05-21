@@ -7,6 +7,7 @@ import { Badge } from '../../components/ui/badge';
 import EmailClient from '../../services/EmailClient';
 import TruckService from '../../services/TruckService';
 import MaintenanceService from '../../services/MaintenanceService';
+import EditTruckForm from '../../components/Trucks/EditTruckForm';
 import {
   Edit,
   ArrowLeft,
@@ -27,7 +28,8 @@ const TruckDetails = () => {
   const [truck, setTruck] = useState(null);
   // isEditOpen state is used for the Edit Truck button but the EditTruckForm component is not implemented yet
   const [loading, setLoading] = useState(true);
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Fetch truck data
   useEffect(() => {
@@ -61,39 +63,42 @@ const TruckDetails = () => {
     // Don't update if the status is the same
     if (oldStatus === newStatus) return;
 
+    // Set updating status to true
+    setIsUpdatingStatus(true);
+
+    // Immediately update the UI
+    setTruck(prev => {
+      const updated = { ...prev, status: newStatus, lastUpdate: 'Just now' };
+
+      // Show notification based on status change
+      if (newStatus === 'active') {
+        toast({
+          title: 'Status Updated',
+          description: `${truck.name} is now active`,
+          variant: 'success'
+        });
+      } else if (newStatus === 'maintenance') {
+        toast({
+          title: 'Status Updated',
+          description: `${truck.name} is now in maintenance`,
+          variant: 'warning'
+        });
+      } else if (newStatus === 'inactive') {
+        toast({
+          title: 'Status Updated',
+          description: `${truck.name} is now inactive`,
+          variant: 'info'
+        });
+      }
+
+      return updated;
+    });
+
     try {
-      // Update the truck status on the server
+      // Update the truck status on the server in the background
       await TruckService.updateTruck(truck.id, {
         ...truck,
         status: newStatus
-      });
-
-      // Update the local state
-      setTruck(prev => {
-        const updated = { ...prev, status: newStatus, lastUpdate: 'Just now' };
-
-        // Show notification based on status change
-        if (newStatus === 'active') {
-          toast({
-            title: 'Status Updated',
-            description: `${truck.name} is now active`,
-            variant: 'success'
-          });
-        } else if (newStatus === 'maintenance') {
-          toast({
-            title: 'Status Updated',
-            description: `${truck.name} is now in maintenance`,
-            variant: 'warning'
-          });
-        } else if (newStatus === 'inactive') {
-          toast({
-            title: 'Status Updated',
-            description: `${truck.name} is now inactive`,
-            variant: 'info'
-          });
-        }
-
-        return updated;
       });
 
       // If the new status is 'maintenance', create a maintenance record
@@ -122,8 +127,8 @@ const TruckDetails = () => {
           console.error('Error creating maintenance record:', maintenanceError);
           toast({
             title: 'Maintenance Record Creation Failed',
-            description: maintenanceError.message || 'Failed to create maintenance record',
-            variant: 'destructive'
+            description: maintenanceError.message || 'Failed to create maintenance record, but truck status was updated',
+            variant: 'warning'
           });
           // Continue execution even if maintenance record creation fails
           // The truck status has already been updated
@@ -131,18 +136,26 @@ const TruckDetails = () => {
       }
     } catch (error) {
       console.error('Error updating truck status:', error);
+
+      // Revert the UI state to the previous status
+      setTruck(prev => {
+        const reverted = { ...prev, status: oldStatus };
+        return reverted;
+      });
+
       toast({
         title: 'Status Update Failed',
         description: error.message || 'Failed to update truck status',
         variant: 'destructive'
       });
+
+      // Set updating status back to false
+      setIsUpdatingStatus(false);
       return; // Exit early if the update failed
     }
 
     // Send email notification about status change
     try {
-      setIsSendingEmail(true);
-
       // Show toast notification that email is being sent
       toast({
         title: 'Sending Email Notification',
@@ -180,17 +193,42 @@ const TruckDetails = () => {
       console.error('Error sending status change email:', error);
       toast({
         title: 'Email Notification Failed',
-        description: error.message || 'Unknown error',
-        variant: 'destructive'
+        description: error.message || 'Failed to send email, but truck status was updated',
+        variant: 'warning'
       });
     } finally {
-      setIsSendingEmail(false);
+      setIsUpdatingStatus(false);
     }
   };
 
   const handleViewDriver = () => {
     if (truck && truck.driverId) {
       navigate(`/drivers/${truck.driverId}`);
+    }
+  };
+
+  const handleUpdateTruck = async (updatedTruck) => {
+    try {
+      // Set lastUpdate to current date and ensure companyId is set
+      const truckToUpdate = {
+        ...updatedTruck,
+        lastUpdate: new Date().toISOString(),
+        companyId: updatedTruck.companyId || 1
+      };
+
+      // Call the API to update the truck
+      const result = await TruckService.updateTruck(updatedTruck.id, truckToUpdate);
+
+      // Update the truck in the local state
+      setTruck({
+        ...result,
+        lastUpdate: 'Just now'
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Failed to update truck:', error);
+      throw error;
     }
   };
 
@@ -252,14 +290,7 @@ const TruckDetails = () => {
           <h1 className="text-2xl font-bold">Truck Details</h1>
         </div>
         <Button
-          onClick={() => {
-            // Edit functionality will be implemented in the future
-            toast({
-              title: 'Feature Coming Soon',
-              description: 'Truck editing functionality is not yet implemented',
-              variant: 'info'
-            });
-          }}
+          onClick={() => setIsEditModalOpen(true)}
           className="flex items-center gap-2"
         >
           <Edit className="h-4 w-4" /> Edit Truck
@@ -382,9 +413,9 @@ const TruckDetails = () => {
               variant={truck.status === 'active' ? 'default' : 'outline'}
               className="w-full justify-start"
               onClick={() => handleStatusChange('active')}
-              disabled={isSendingEmail}
+              disabled={isUpdatingStatus}
             >
-              {isSendingEmail ? (
+              {truck.status === 'active' && isUpdatingStatus ? (
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
               ) : (
                 <CheckCircle className="h-4 w-4 mr-2" />
@@ -395,9 +426,9 @@ const TruckDetails = () => {
               variant={truck.status === 'maintenance' ? 'warning' : 'outline'}
               className={`w-full justify-start ${truck.status === 'maintenance' ? 'bg-amber-500 hover:bg-amber-600 text-white' : ''}`}
               onClick={() => handleStatusChange('maintenance')}
-              disabled={isSendingEmail}
+              disabled={isUpdatingStatus}
             >
-              {isSendingEmail ? (
+              {truck.status === 'maintenance' && isUpdatingStatus ? (
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
               ) : (
                 <AlertTriangle className="h-4 w-4 mr-2" />
@@ -408,9 +439,9 @@ const TruckDetails = () => {
               variant={truck.status === 'inactive' ? 'destructive' : 'outline'}
               className="w-full justify-start"
               onClick={() => handleStatusChange('inactive')}
-              disabled={isSendingEmail}
+              disabled={isUpdatingStatus}
             >
-              {isSendingEmail ? (
+              {truck.status === 'inactive' && isUpdatingStatus ? (
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
               ) : (
                 <XCircle className="h-4 w-4 mr-2" />
@@ -420,6 +451,14 @@ const TruckDetails = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Truck Form */}
+      <EditTruckForm
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onUpdateTruck={handleUpdateTruck}
+        truck={truck}
+      />
     </div>
   );
 };

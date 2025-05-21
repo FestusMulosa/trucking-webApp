@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/use-toast';
 import MaintenanceService from '../../services/MaintenanceService';
 import TruckService from '../../services/TruckService';
+import ScheduleMaintenanceForm from './ScheduleMaintenanceForm';
 import './Maintenance.css';
 
 const Maintenance = () => {
@@ -14,6 +15,15 @@ const Maintenance = () => {
   const [scheduledMaintenance, setScheduledMaintenance] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // State for the schedule maintenance modal
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+
+  // Helper function to extract truck ID from a maintenance record
+  const extractTruckId = (record) => {
+    const truckIdMatch = record.truckId.match(/Truck (\d+)/);
+    return record.truck ? record.truck.id : (truckIdMatch ? truckIdMatch[1] : null);
+  };
 
   // Fetch maintenance records from the API
   useEffect(() => {
@@ -91,8 +101,7 @@ const Maintenance = () => {
 
       if (record && record.status === 'in-progress') {
         // Extract the truck ID from the record
-        const truckIdMatch = record.truckId.match(/Truck (\d+)/);
-        const truckId = record.truck ? record.truck.id : (truckIdMatch ? truckIdMatch[1] : null);
+        const truckId = extractTruckId(record);
 
         // Update the record in the database
         await MaintenanceService.updateMaintenanceRecord(id, {
@@ -167,6 +176,107 @@ const Maintenance = () => {
       toast({
         title: 'Error',
         description: 'Failed to cancel maintenance record',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleStartMaintenance = async (id) => {
+    try {
+      const maintenanceToStart = scheduledMaintenance.find(item => item.id === id);
+
+      if (maintenanceToStart) {
+        // Extract the truck ID from the record
+        const truckId = extractTruckId(maintenanceToStart);
+
+        // Update the record in the database
+        await MaintenanceService.updateMaintenanceRecord(id, {
+          status: 'in_progress',
+          startDate: new Date().toISOString().split('T')[0] // Today's date in YYYY-MM-DD format
+        });
+
+        toast({
+          title: 'Maintenance Started',
+          description: `Scheduled maintenance for ${maintenanceToStart.truckId} has been started`,
+          variant: 'success'
+        });
+
+        // Update the local state
+        setScheduledMaintenance(scheduledMaintenance.filter(item => item.id !== id));
+
+        // If we have a truck ID, update its status to maintenance
+        if (truckId) {
+          try {
+            // Get the current truck data
+            const truckData = await TruckService.getTruck(truckId);
+
+            // Update the truck status to maintenance
+            await TruckService.updateTruck(truckId, {
+              ...truckData,
+              status: 'maintenance'
+            });
+          } catch (truckError) {
+            console.error('Error updating truck status:', truckError);
+            // Continue anyway - the maintenance record has been updated
+          }
+        }
+
+        // Refresh the maintenance records to show the new in-progress record
+        setLoading(true);
+        MaintenanceService.getMaintenanceRecords()
+          .then(records => {
+            // Process the records (same logic as in useEffect)
+            const completedAndInProgress = [];
+            const scheduled = [];
+
+            records.forEach(record => {
+              const uiRecord = {
+                id: record.id,
+                truckId: record.truck ? record.truck.name : `Truck ${record.truckId}`,
+                type: record.maintenanceType === 'other' ? record.description : record.maintenanceType,
+                date: record.startDate,
+                status: record.status === 'in_progress' ? 'in-progress' : record.status,
+                technician: record.performedBy || 'Unassigned',
+                notes: record.notes || '',
+                cost: record.cost || 0
+              };
+
+              if (record.status === 'scheduled') {
+                const today = new Date();
+                const scheduledDate = new Date(record.startDate);
+                const daysDifference = Math.ceil((scheduledDate - today) / (1000 * 60 * 60 * 24));
+
+                let priority = 'medium';
+                if (daysDifference <= 7) {
+                  priority = 'high';
+                } else if (daysDifference > 30) {
+                  priority = 'low';
+                }
+
+                scheduled.push({
+                  ...uiRecord,
+                  priority
+                });
+              } else {
+                completedAndInProgress.push(uiRecord);
+              }
+            });
+
+            setMaintenanceRecords(completedAndInProgress);
+            setScheduledMaintenance(scheduled);
+            setLoading(false);
+          })
+          .catch(err => {
+            console.error('Error fetching maintenance records:', err);
+            setError('Failed to load maintenance records. Please try again later.');
+            setLoading(false);
+          });
+      }
+    } catch (err) {
+      console.error('Error starting maintenance record:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to start maintenance record',
         variant: 'destructive'
       });
     }
@@ -296,8 +406,7 @@ const Maintenance = () => {
                           className="view-button"
                           onClick={() => {
                             // Extract the truck ID from the record
-                            const truckIdMatch = record.truckId.match(/Truck (\d+)/);
-                            const truckId = record.truck ? record.truck.id : (truckIdMatch ? truckIdMatch[1] : null);
+                            const truckId = extractTruckId(record);
 
                             if (truckId) {
                               navigate(`/maintenance/truck/${truckId}`);
@@ -362,8 +471,7 @@ const Maintenance = () => {
                           className="view-button"
                           onClick={() => {
                             // Extract the truck ID from the record
-                            const truckIdMatch = item.truckId.match(/Truck (\d+)/);
-                            const truckId = item.truck ? item.truck.id : (truckIdMatch ? truckIdMatch[1] : null);
+                            const truckId = extractTruckId(item);
 
                             if (truckId) {
                               navigate(`/maintenance/truck/${truckId}`);
@@ -379,8 +487,16 @@ const Maintenance = () => {
                           <i className="fas fa-eye"></i>
                         </button>
                         <button
+                          className="edit-button"
+                          onClick={() => handleStartMaintenance(item.id)}
+                          title="Start Maintenance"
+                        >
+                          <i className="fas fa-play"></i>
+                        </button>
+                        <button
                           className="delete-button"
                           onClick={() => handleCancelScheduled(item.id)}
+                          title="Cancel Maintenance"
                         >
                           <i className="fas fa-trash"></i>
                         </button>
@@ -394,14 +510,71 @@ const Maintenance = () => {
 
           <button
             className="add-maintenance-button"
-            onClick={() => toast({
-              title: 'New Maintenance',
-              description: 'Creating new scheduled maintenance',
-              variant: 'info'
-            })}
+            onClick={() => setShowScheduleModal(true)}
           >
             <i className="fas fa-plus"></i> Schedule New Maintenance
           </button>
+        </div>
+      )}
+
+      {/* Schedule Maintenance Modal */}
+      {showScheduleModal && (
+        <div className="modal-overlay">
+          <ScheduleMaintenanceForm
+            onClose={() => setShowScheduleModal(false)}
+            onSuccess={() => {
+              // Refresh the maintenance records
+              setLoading(true);
+              MaintenanceService.getMaintenanceRecords()
+                .then(records => {
+                  // Process the records (same logic as in useEffect)
+                  const completedAndInProgress = [];
+                  const scheduled = [];
+
+                  records.forEach(record => {
+                    const uiRecord = {
+                      id: record.id,
+                      truckId: record.truck ? record.truck.name : `Truck ${record.truckId}`,
+                      type: record.maintenanceType === 'other' ? record.description : record.maintenanceType,
+                      date: record.startDate,
+                      status: record.status === 'in_progress' ? 'in-progress' : record.status,
+                      technician: record.performedBy || 'Unassigned',
+                      notes: record.notes || '',
+                      cost: record.cost || 0
+                    };
+
+                    if (record.status === 'scheduled') {
+                      const today = new Date();
+                      const scheduledDate = new Date(record.startDate);
+                      const daysDifference = Math.ceil((scheduledDate - today) / (1000 * 60 * 60 * 24));
+
+                      let priority = 'medium';
+                      if (daysDifference <= 7) {
+                        priority = 'high';
+                      } else if (daysDifference > 30) {
+                        priority = 'low';
+                      }
+
+                      scheduled.push({
+                        ...uiRecord,
+                        priority
+                      });
+                    } else {
+                      completedAndInProgress.push(uiRecord);
+                    }
+                  });
+
+                  setMaintenanceRecords(completedAndInProgress);
+                  setScheduledMaintenance(scheduled);
+                  setLoading(false);
+                })
+                .catch(err => {
+                  console.error('Error fetching maintenance records:', err);
+                  setError('Failed to load maintenance records. Please try again later.');
+                  setLoading(false);
+                });
+            }}
+          />
         </div>
       )}
     </div>
