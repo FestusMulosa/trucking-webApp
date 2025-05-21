@@ -8,6 +8,7 @@ import Drivers from './Screens/Drivers';
 import DriverDetails from './Screens/DriverDetails';
 import TruckDetails from './Screens/TruckDetails';
 import Maintenance from './Screens/Maintenance';
+import MaintenanceDetails from './Screens/MaintenanceDetails';
 import Reports from './Screens/Reports';
 import Settings from './Screens/Settings';
 import Login from './Screens/Login';
@@ -98,6 +99,17 @@ function App() {
                     <Navbar />
                     <main className="flex-1 bg-background py-6">
                       <Maintenance />
+                    </main>
+                  </>
+                }
+              />
+              <Route
+                path="/maintenance/truck/:truckId"
+                element={
+                  <>
+                    <Navbar />
+                    <main className="flex-1 bg-background py-6">
+                      <MaintenanceDetails />
                     </main>
                   </>
                 }

@@ -3,7 +3,7 @@
  */
 
 // API base URL - pointing to the dedicated server
-const API_BASE_URL = (process.env.REACT_APP_API_URL || 'http://localhost:3001') + '/api';
+const API_BASE_URL = (process.env.REACT_APP_API_URL || 'https://trucking-server.onrender.com') + '/api';
 
 // Email settings from environment variables
 const EMAIL_ENABLED = process.env.REACT_APP_EMAIL_ENABLED !== 'false'; // Enabled by default
@@ -174,20 +174,68 @@ const sendStatusChangeEmail = async (options) => {
 
   console.log(`Preparing to send status change email: ${truckId} from ${oldStatus} to ${newStatus}`);
 
-  // Use the dedicated status change endpoint
+  // Determine notification type based on new status
+  let type = 'info';
+  if (newStatus === 'active') {
+    type = 'success';
+  } else if (newStatus === 'maintenance') {
+    type = 'warning';
+  } else if (newStatus === 'inactive') {
+    type = 'error';
+  }
+
+  const title = `Status Change for ${truckId}`;
+  const message = `The status of ${truckId} has changed from ${oldStatus} to ${newStatus}.`;
+
+  // Use the general send-email endpoint instead of a dedicated endpoint
   try {
     console.log(`Sending status change notification to ${to}`);
 
-    const response = await fetch(`${API_BASE_URL}/send-status-change`, {
+    // Create HTML content with styling based on notification type
+    const getTypeColor = () => {
+      switch (type) {
+        case 'success': return '#4CAF50';
+        case 'warning': return '#FF9800';
+        case 'error': return '#F44336';
+        case 'info':
+        default: return '#2196F3';
+      }
+    };
+
+    const getTypeIcon = () => {
+      switch (type) {
+        case 'success': return '✅';
+        case 'warning': return '⚠️';
+        case 'error': return '❌';
+        case 'info':
+        default: return 'ℹ️';
+      }
+    };
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+        <div style="background-color: ${getTypeColor()}; color: white; padding: 10px 15px; border-radius: 4px; margin-bottom: 20px;">
+          <h2 style="margin: 0; font-size: 18px;">${getTypeIcon()} ${title}</h2>
+        </div>
+        <div style="color: #333; line-height: 1.5;">
+          <p>${message}</p>
+        </div>
+        <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; color: #777; font-size: 12px;">
+          <p>This is an automated message from the Truck Fleet Tracker system. Please do not reply to this email.</p>
+        </div>
+      </div>
+    `;
+
+    const response = await fetch(`${API_BASE_URL}/send-email`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         to,
-        truckId,
-        oldStatus,
-        newStatus
+        subject: `Truck Fleet Tracker: ${title}`,
+        text: `${title}\n\n${message}\n\nThis is an automated message from the Truck Fleet Tracker system. Please do not reply to this email.`,
+        html
       }),
     });
 

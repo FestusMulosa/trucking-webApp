@@ -3,18 +3,37 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const PrivateRoute = () => {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, setCurrentUser, loading, setToken } = useAuth();
 
   // Log authentication state for debugging
   useEffect(() => {
     console.log('PrivateRoute - Auth State:', { currentUser, loading });
   }, [currentUser, loading]);
 
+  // Check if user exists in localStorage and sync with context if needed
+  useEffect(() => {
+    if (!currentUser) {
+      try {
+        const storedUser = localStorage.getItem('user');
+        const storedToken = localStorage.getItem('token');
+
+        if (storedUser && storedToken) {
+          console.log('Found user in localStorage, syncing with context');
+          setCurrentUser(JSON.parse(storedUser));
+          setToken(storedToken);
+        }
+      } catch (error) {
+        console.error('Error syncing from localStorage:', error);
+      }
+    }
+  }, [currentUser, setCurrentUser, setToken]);
+
   // Check if user exists in localStorage as a fallback
   const checkLocalStorage = () => {
     try {
       const storedUser = localStorage.getItem('user');
-      return !!storedUser;
+      const storedToken = localStorage.getItem('token');
+      return !!(storedUser && storedToken);
     } catch (error) {
       console.error('Error checking localStorage:', error);
       return false;

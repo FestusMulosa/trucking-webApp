@@ -19,6 +19,7 @@ const AddDriverForm = ({ isOpen, onClose, onAddDriver }) => {
   const [newDriver, setNewDriver] = useState({
     name: '',
     licenseNumber: '',
+    licenseExpiry: '',
     phone: '',
     email: '',
     assignedTruck: null,
@@ -38,10 +39,10 @@ const AddDriverForm = ({ isOpen, onClose, onAddDriver }) => {
 
   const handleAddDriver = () => {
     // Validate form
-    if (!newDriver.name || !newDriver.licenseNumber) {
+    if (!newDriver.name || !newDriver.licenseNumber || !newDriver.licenseExpiry) {
       toast({
         title: 'Validation Error',
-        description: 'Driver Name and License Number are required',
+        description: 'Driver Name, License Number, and License Expiry Date are required',
         variant: 'destructive'
       });
       return;
@@ -59,6 +60,7 @@ const AddDriverForm = ({ isOpen, onClose, onAddDriver }) => {
     setNewDriver({
       name: '',
       licenseNumber: '',
+      licenseExpiry: '',
       phone: '',
       email: '',
       assignedTruck: null,
@@ -108,6 +110,31 @@ const AddDriverForm = ({ isOpen, onClose, onAddDriver }) => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
+              <Label htmlFor="licenseExpiry">License Expiry Date*</Label>
+              <Input
+                id="licenseExpiry"
+                name="licenseExpiry"
+                type="date"
+                value={newDriver.licenseExpiry}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                id="status"
+                name="status"
+                value={newDriver.status}
+                onChange={handleInputChange}
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="on_leave">On Leave</option>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label htmlFor="phone">Phone</Label>
               <Input
                 id="phone"
@@ -129,29 +156,15 @@ const AddDriverForm = ({ isOpen, onClose, onAddDriver }) => {
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                id="status"
-                name="status"
-                value={newDriver.status}
-                onChange={handleInputChange}
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="experience">Experience</Label>
-              <Input
-                id="experience"
-                name="experience"
-                value={newDriver.experience}
-                onChange={handleInputChange}
-                placeholder="e.g. 5 years"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="experience">Experience</Label>
+            <Input
+              id="experience"
+              name="experience"
+              value={newDriver.experience}
+              onChange={handleInputChange}
+              placeholder="e.g. 5 years"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="address">Address</Label>

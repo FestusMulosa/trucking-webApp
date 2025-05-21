@@ -1,10 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/use-toast';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import EmailClient from '../../services/EmailClient';
+import TruckService from '../../services/TruckService';
+import MaintenanceService from '../../services/MaintenanceService';
+import EditTruckForm from '../../components/Trucks/EditTruckForm';
 import {
   Edit,
   ArrowLeft,
@@ -25,112 +28,31 @@ const TruckDetails = () => {
   const [truck, setTruck] = useState(null);
   // isEditOpen state is used for the Edit Truck button but the EditTruckForm component is not implemented yet
   const [loading, setLoading] = useState(true);
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
-
-  // Mock data for trucks - in a real app, this would come from an API
-  // Using useMemo to prevent recreation of the array on each render
-  const trucksData = useMemo(() => [
-    {
-      id: 1,
-      name: 'Truck 001',
-      numberPlate: 'ABC 123 ZM',
-      status: 'active',
-      route: 'Lusaka-Solwezi',
-      cargoType: 'Fuel',
-      lastUpdate: '10 min ago',
-      driver: 'John Smith',
-      driverId: 1,
-      roadTaxDate: '2023-12-15',
-      insuranceDate: '2024-01-20',
-      fitnessDate: '2023-11-30',
-      comesaExpiryDate: '2023-12-10',
-      nextMaintenance: '2023-06-15'
-    },
-    {
-      id: 2,
-      name: 'Truck 002',
-      numberPlate: 'DEF 456 ZM',
-      status: 'maintenance',
-      route: 'Service Center',
-      cargoType: 'Construction',
-      lastUpdate: '2 hours ago',
-      driver: 'Emily Johnson',
-      driverId: 2,
-      roadTaxDate: '2023-10-05',
-      insuranceDate: '2023-11-15',
-      fitnessDate: '2023-09-20',
-      comesaExpiryDate: '2023-10-15',
-      nextMaintenance: '2023-05-20'
-    },
-    {
-      id: 3,
-      name: 'Truck 003',
-      numberPlate: 'GHI 789 ZM',
-      status: 'inactive',
-      route: 'Warehouse',
-      cargoType: 'Agricultural',
-      lastUpdate: '1 day ago',
-      driver: 'Unassigned',
-      driverId: null,
-      roadTaxDate: '2024-02-28',
-      insuranceDate: '2024-03-15',
-      fitnessDate: '2024-01-10',
-      comesaExpiryDate: '2024-02-20',
-      nextMaintenance: '2023-07-10'
-    },
-    {
-      id: 4,
-      name: 'Truck 004',
-      numberPlate: 'JKL 012 ZM',
-      status: 'active',
-      route: 'Ndola-Kitwe',
-      cargoType: 'Mining',
-      lastUpdate: '5 min ago',
-      driver: 'Michael Brown',
-      driverId: 3,
-      roadTaxDate: '2023-11-10',
-      insuranceDate: '2023-12-05',
-      fitnessDate: '2023-10-25',
-      comesaExpiryDate: '2023-11-05',
-      nextMaintenance: '2023-06-30'
-    },
-    {
-      id: 5,
-      name: 'Truck 005',
-      numberPlate: 'MNO 345 ZM',
-      status: 'active',
-      route: 'Lusaka-Livingstone',
-      cargoType: 'Consumer Goods',
-      lastUpdate: '15 min ago',
-      driver: 'Sarah Davis',
-      driverId: 4,
-      roadTaxDate: '2024-01-05',
-      insuranceDate: '2023-12-20',
-      fitnessDate: '2023-11-15',
-      comesaExpiryDate: '2023-12-25',
-      nextMaintenance: '2023-06-05'
-    },
-  ], []);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Fetch truck data
   useEffect(() => {
-    // Simulate API call
-    setLoading(true);
-    setTimeout(() => {
-      const foundTruck = trucksData.find(t => t.id === parseInt(truckId));
-      if (foundTruck) {
-        setTruck(foundTruck);
-      } else {
+    const fetchTruckData = async () => {
+      setLoading(true);
+      try {
+        const data = await TruckService.getTruck(truckId);
+        setTruck(data);
+      } catch (error) {
+        console.error('Error fetching truck details:', error);
         toast({
           title: 'Truck Not Found',
           description: 'The requested truck could not be found',
           variant: 'destructive'
         });
         navigate('/trucks');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }, 500);
-  }, [truckId, navigate, toast, trucksData]);
+    };
+
+    fetchTruckData();
+  }, [truckId, navigate, toast]);
 
   const handleStatusChange = async (newStatus) => {
     if (!truck) return;
@@ -141,6 +63,10 @@ const TruckDetails = () => {
     // Don't update if the status is the same
     if (oldStatus === newStatus) return;
 
+    // Set updating status to true
+    setIsUpdatingStatus(true);
+
+    // Immediately update the UI
     setTruck(prev => {
       const updated = { ...prev, status: newStatus, lastUpdate: 'Just now' };
 
@@ -168,10 +94,68 @@ const TruckDetails = () => {
       return updated;
     });
 
+    try {
+      // Update the truck status on the server in the background
+      await TruckService.updateTruck(truck.id, {
+        ...truck,
+        status: newStatus
+      });
+
+      // If the new status is 'maintenance', create a maintenance record
+      if (newStatus === 'maintenance') {
+        try {
+          // Create a new maintenance record
+          const today = new Date().toISOString().split('T')[0]; // Today's date in YYYY-MM-DD format
+
+          const maintenanceRecord = {
+            truckId: truck.id,
+            maintenanceType: 'other', // Default type
+            description: 'Status changed to maintenance',
+            startDate: today,
+            status: 'in_progress', // Use 'in_progress' to match the server's enum
+            notes: `Truck ${truck.name} (${truck.numberPlate}) status changed to maintenance`
+          };
+
+          await MaintenanceService.createMaintenanceRecord(maintenanceRecord);
+
+          toast({
+            title: 'Maintenance Record Created',
+            description: `A maintenance record has been created for ${truck.name}`,
+            variant: 'success'
+          });
+        } catch (maintenanceError) {
+          console.error('Error creating maintenance record:', maintenanceError);
+          toast({
+            title: 'Maintenance Record Creation Failed',
+            description: maintenanceError.message || 'Failed to create maintenance record, but truck status was updated',
+            variant: 'warning'
+          });
+          // Continue execution even if maintenance record creation fails
+          // The truck status has already been updated
+        }
+      }
+    } catch (error) {
+      console.error('Error updating truck status:', error);
+
+      // Revert the UI state to the previous status
+      setTruck(prev => {
+        const reverted = { ...prev, status: oldStatus };
+        return reverted;
+      });
+
+      toast({
+        title: 'Status Update Failed',
+        description: error.message || 'Failed to update truck status',
+        variant: 'destructive'
+      });
+
+      // Set updating status back to false
+      setIsUpdatingStatus(false);
+      return; // Exit early if the update failed
+    }
+
     // Send email notification about status change
     try {
-      setIsSendingEmail(true);
-
       // Show toast notification that email is being sent
       toast({
         title: 'Sending Email Notification',
@@ -209,17 +193,42 @@ const TruckDetails = () => {
       console.error('Error sending status change email:', error);
       toast({
         title: 'Email Notification Failed',
-        description: error.message || 'Unknown error',
-        variant: 'destructive'
+        description: error.message || 'Failed to send email, but truck status was updated',
+        variant: 'warning'
       });
     } finally {
-      setIsSendingEmail(false);
+      setIsUpdatingStatus(false);
     }
   };
 
   const handleViewDriver = () => {
     if (truck && truck.driverId) {
       navigate(`/drivers/${truck.driverId}`);
+    }
+  };
+
+  const handleUpdateTruck = async (updatedTruck) => {
+    try {
+      // Set lastUpdate to current date and ensure companyId is set
+      const truckToUpdate = {
+        ...updatedTruck,
+        lastUpdate: new Date().toISOString(),
+        companyId: updatedTruck.companyId || 1
+      };
+
+      // Call the API to update the truck
+      const result = await TruckService.updateTruck(updatedTruck.id, truckToUpdate);
+
+      // Update the truck in the local state
+      setTruck({
+        ...result,
+        lastUpdate: 'Just now'
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Failed to update truck:', error);
+      throw error;
     }
   };
 
@@ -281,14 +290,7 @@ const TruckDetails = () => {
           <h1 className="text-2xl font-bold">Truck Details</h1>
         </div>
         <Button
-          onClick={() => {
-            // Edit functionality will be implemented in the future
-            toast({
-              title: 'Feature Coming Soon',
-              description: 'Truck editing functionality is not yet implemented',
-              variant: 'info'
-            });
-          }}
+          onClick={() => setIsEditModalOpen(true)}
           className="flex items-center gap-2"
         >
           <Edit className="h-4 w-4" /> Edit Truck
@@ -411,9 +413,9 @@ const TruckDetails = () => {
               variant={truck.status === 'active' ? 'default' : 'outline'}
               className="w-full justify-start"
               onClick={() => handleStatusChange('active')}
-              disabled={isSendingEmail}
+              disabled={isUpdatingStatus}
             >
-              {isSendingEmail ? (
+              {truck.status === 'active' && isUpdatingStatus ? (
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
               ) : (
                 <CheckCircle className="h-4 w-4 mr-2" />
@@ -424,9 +426,9 @@ const TruckDetails = () => {
               variant={truck.status === 'maintenance' ? 'warning' : 'outline'}
               className={`w-full justify-start ${truck.status === 'maintenance' ? 'bg-amber-500 hover:bg-amber-600 text-white' : ''}`}
               onClick={() => handleStatusChange('maintenance')}
-              disabled={isSendingEmail}
+              disabled={isUpdatingStatus}
             >
-              {isSendingEmail ? (
+              {truck.status === 'maintenance' && isUpdatingStatus ? (
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
               ) : (
                 <AlertTriangle className="h-4 w-4 mr-2" />
@@ -437,9 +439,9 @@ const TruckDetails = () => {
               variant={truck.status === 'inactive' ? 'destructive' : 'outline'}
               className="w-full justify-start"
               onClick={() => handleStatusChange('inactive')}
-              disabled={isSendingEmail}
+              disabled={isUpdatingStatus}
             >
-              {isSendingEmail ? (
+              {truck.status === 'inactive' && isUpdatingStatus ? (
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
               ) : (
                 <XCircle className="h-4 w-4 mr-2" />
@@ -449,6 +451,14 @@ const TruckDetails = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Truck Form */}
+      <EditTruckForm
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onUpdateTruck={handleUpdateTruck}
+        truck={truck}
+      />
     </div>
   );
 };

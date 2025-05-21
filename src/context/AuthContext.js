@@ -39,8 +39,8 @@ export const AuthProvider = ({ children }) => {
   // Login function
   const login = async (email, password) => {
     try {
-      // Use the API URL from environment variables if available, otherwise use localhost
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+      // Use the API URL from environment variables if available, otherwise use the production server
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://trucking-server.onrender.com';
       const response = await fetch(`${apiUrl}/api/auth/login`, {
         method: 'POST',
         headers: {
@@ -62,6 +62,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Save user and token to state and localStorage
+      console.log('Login successful, received token:', data.token ? 'Token received' : 'No token received');
       setCurrentUser(data.user);
       setToken(data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
@@ -86,7 +87,7 @@ export const AuthProvider = ({ children }) => {
   // Register function
   const register = async (userData) => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://trucking-server.onrender.com';
       const response = await fetch(`${apiUrl}/api/auth/register`, {
         method: 'POST',
         headers: {
@@ -127,7 +128,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error('No authentication token');
       }
 
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://trucking-server.onrender.com';
       const response = await fetch(`${apiUrl}/api/auth/profile`, {
         method: 'GET',
         headers: {
@@ -165,7 +166,9 @@ export const AuthProvider = ({ children }) => {
   // Value object to be provided by the context
   const value = {
     currentUser,
+    setCurrentUser,
     token,
+    setToken,
     loading,
     login,
     logout,
