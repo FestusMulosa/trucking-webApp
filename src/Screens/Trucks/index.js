@@ -139,6 +139,12 @@ const Trucks = () => {
     navigate(`/trucks/details/${truck.id}`);
   };
 
+  const handleViewMaintenance = (e, truck) => {
+    e.stopPropagation(); // Prevent triggering the row click
+    // Navigate to the maintenance details page for this truck
+    navigate(`/maintenance/truck/${truck.id}`);
+  };
+
   const closeModal = () => {
     setIsModalOpen(false);
   };
@@ -543,15 +549,12 @@ const Trucks = () => {
               <span className="truck-date">{truck.comesaExpiryDate ? new Date(truck.comesaExpiryDate).toLocaleDateString() : 'N/A'}</span>
               <span className="truck-update">{truck.lastUpdate}</span>
               <span className="truck-actions">
-                {/* <button
-                  className="view-details-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleTruckClick(truck);
-                  }}
+                <button
+                  className="view-maintenance-btn"
+                  onClick={(e) => handleViewMaintenance(e, truck)}
                 >
-                  <i className="fas fa-info-circle"></i> Details
-                </button> */}
+                  <i className="fas fa-tools"></i> Maintenance
+                </button>
               </span>
             </div>
           ))}

@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/use-toast';
 import MaintenanceService from '../../services/MaintenanceService';
+import TruckService from '../../services/TruckService';
 import './Maintenance.css';
 
 const Maintenance = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   // State for maintenance records
@@ -87,6 +90,10 @@ const Maintenance = () => {
       const record = maintenanceRecords.find(r => r.id === id);
 
       if (record && record.status === 'in-progress') {
+        // Extract the truck ID from the record
+        const truckIdMatch = record.truckId.match(/Truck (\d+)/);
+        const truckId = record.truck ? record.truck.id : (truckIdMatch ? truckIdMatch[1] : null);
+
         // Update the record in the database
         await MaintenanceService.updateMaintenanceRecord(id, {
           status: 'completed',
@@ -98,7 +105,7 @@ const Maintenance = () => {
           if (r.id === id) {
             toast({
               title: 'Maintenance Completed',
-              description: `${r.truckId} maintenance has been marked as completed`,
+              description: `${r.truckId} maintenance has been marked as completed and truck status set to inactive`,
               variant: 'success'
             });
             return { ...r, status: 'completed' };
@@ -107,6 +114,24 @@ const Maintenance = () => {
         });
 
         setMaintenanceRecords(updatedRecords);
+
+        // If we have a truck ID, ensure its status is set to inactive
+        if (truckId) {
+          try {
+            // Get the current truck data
+            const truckData = await TruckService.getTruck(truckId);
+
+            // If the truck is not already inactive, update it
+            if (truckData.status !== 'inactive') {
+              await TruckService.updateTruck(truckId, {
+                ...truckData,
+                status: 'inactive'
+              });
+            }
+          } catch (truckError) {
+            // Silently handle error - the server-side update should have worked
+          }
+        }
       }
     } catch (err) {
       console.error('Error completing maintenance record:', err);
@@ -269,11 +294,21 @@ const Maintenance = () => {
                       <div className="action-buttons">
                         <button
                           className="view-button"
-                          onClick={() => toast({
-                            title: 'Maintenance Details',
-                            description: `Viewing details for ${record.truckId} ${record.type}`,
-                            variant: 'info'
-                          })}
+                          onClick={() => {
+                            // Extract the truck ID from the record
+                            const truckIdMatch = record.truckId.match(/Truck (\d+)/);
+                            const truckId = record.truck ? record.truck.id : (truckIdMatch ? truckIdMatch[1] : null);
+
+                            if (truckId) {
+                              navigate(`/maintenance/truck/${truckId}`);
+                            } else {
+                              toast({
+                                title: 'Error',
+                                description: 'Could not determine truck ID',
+                                variant: 'destructive'
+                              });
+                            }
+                          }}
                         >
                           <i className="fas fa-eye"></i>
                         </button>
@@ -324,14 +359,24 @@ const Maintenance = () => {
                     <td>
                       <div className="action-buttons">
                         <button
-                          className="edit-button"
-                          onClick={() => toast({
-                            title: 'Edit Maintenance',
-                            description: `Editing scheduled maintenance for ${item.truckId}`,
-                            variant: 'info'
-                          })}
+                          className="view-button"
+                          onClick={() => {
+                            // Extract the truck ID from the record
+                            const truckIdMatch = item.truckId.match(/Truck (\d+)/);
+                            const truckId = item.truck ? item.truck.id : (truckIdMatch ? truckIdMatch[1] : null);
+
+                            if (truckId) {
+                              navigate(`/maintenance/truck/${truckId}`);
+                            } else {
+                              toast({
+                                title: 'Error',
+                                description: 'Could not determine truck ID',
+                                variant: 'destructive'
+                              });
+                            }
+                          }}
                         >
-                          <i className="fas fa-edit"></i>
+                          <i className="fas fa-eye"></i>
                         </button>
                         <button
                           className="delete-button"
