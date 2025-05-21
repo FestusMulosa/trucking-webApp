@@ -3,7 +3,7 @@
  */
 
 // API base URL - pointing to the dedicated server
-const API_BASE_URL = (process.env.REACT_APP_API_URL || 'http://localhost:3001') + '/api';
+const API_BASE_URL = (process.env.REACT_APP_API_URL || 'https://trucking-server.onrender.com') + '/api';
 
 /**
  * Get the authentication token from local storage
