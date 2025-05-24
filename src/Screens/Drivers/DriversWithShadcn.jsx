@@ -7,6 +7,7 @@ import AddDriverForm from '../../components/Drivers/AddDriverForm';
 import EditDriverForm from '../../components/Drivers/EditDriverForm';
 import DriverDetails from '../../components/Drivers/DriverDetails';
 import DriverList from '../../components/Drivers/DriverList';
+import TruckAssignmentModal from '../../components/Drivers/TruckAssignmentModal';
 import DriverService from '../../services/DriverService';
 
 const DriversWithShadcn = () => {
@@ -61,6 +62,8 @@ const DriversWithShadcn = () => {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editDriver, setEditDriver] = useState(null);
+  const [isTruckAssignmentOpen, setIsTruckAssignmentOpen] = useState(false);
+  const [assignmentDriver, setAssignmentDriver] = useState(null);
   const handleDriverClick = (driver) => {
     // Navigate to the driver details page
     navigate(`/drivers/${driver.id}`);
@@ -70,6 +73,16 @@ const DriversWithShadcn = () => {
     setEditDriver({...driver});
     setIsEditOpen(true);
     setIsDetailsOpen(false);
+  };
+
+  const handleAssignTruck = (driver) => {
+    setAssignmentDriver(driver);
+    setIsTruckAssignmentOpen(true);
+  };
+
+  const handleAssignmentComplete = () => {
+    // Refresh the drivers list after assignment
+    fetchDrivers();
   };
 
   const handleAddDriver = async (newDriver) => {
@@ -323,6 +336,7 @@ const DriversWithShadcn = () => {
         <DriverList
           drivers={drivers}
           onDriverClick={handleDriverClick}
+          onAssignTruck={handleAssignTruck}
         />
       )}
 
@@ -348,6 +362,14 @@ const DriversWithShadcn = () => {
         onClose={() => setIsEditOpen(false)}
         onUpdateDriver={handleUpdateDriver}
         driver={editDriver}
+      />
+
+      {/* Truck Assignment Modal */}
+      <TruckAssignmentModal
+        isOpen={isTruckAssignmentOpen}
+        onClose={() => setIsTruckAssignmentOpen(false)}
+        driver={assignmentDriver}
+        onAssignmentComplete={handleAssignmentComplete}
       />
     </div>
   );

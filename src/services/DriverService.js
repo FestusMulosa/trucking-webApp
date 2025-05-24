@@ -100,8 +100,8 @@ const getDrivers = async (options = {}) => {
       licenseNumber: driver.licenseNumber,
       phone: driver.phone || 'N/A',
       email: driver.email || 'N/A',
-      assignedTruck: driver.assignedTruck || null,
-      truckId: driver.truckId || null,
+      assignedTruck: driver.assignedTruck ? driver.assignedTruck.name : null,
+      truckId: driver.assignedTruck ? driver.assignedTruck.id : null,
       status: driver.status || 'inactive',
       experience: 'N/A', // This field might not be in the database
       address: [driver.address, driver.city, driver.state, driver.country]
@@ -179,8 +179,8 @@ const getDriver = async (id) => {
       licenseNumber: data.licenseNumber,
       phone: data.phone || 'N/A',
       email: data.email || 'N/A',
-      assignedTruck: data.assignedTruck || null,
-      truckId: data.truckId || null,
+      assignedTruck: data.assignedTruck ? data.assignedTruck.name : null,
+      truckId: data.assignedTruck ? data.assignedTruck.id : null,
       status: data.status || 'inactive',
       experience: 'N/A', // This field might not be in the database
       address: [data.address, data.city, data.state, data.country]
@@ -456,13 +456,100 @@ const deleteDriver = async (id) => {
   }
 };
 
+/**
+ * Assign a driver to a truck
+ * @param {number} driverId - The ID of the driver to assign
+ * @param {number} truckId - The ID of the truck to assign to
+ * @returns {Promise} Promise that resolves when the assignment is complete
+ */
+const assignDriverToTruck = async (driverId, truckId) => {
+  try {
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    console.log(`Assigning driver ${driverId} to truck ${truckId}`);
+
+    const response = await fetch(`${API_BASE_URL}/drivers/${driverId}/assign-truck/${truckId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      // Handle specific authentication errors
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('Invalid token');
+      }
+      throw new Error(data.error || 'Failed to assign driver to truck');
+    }
+
+    // Clear cache after assignment
+    apiCache.clearAll();
+
+    return data;
+  } catch (error) {
+    console.error('Failed to assign driver to truck:', error);
+    throw error;
+  }
+};
+
+/**
+ * Unassign a driver from their current truck
+ * @param {number} driverId - The ID of the driver to unassign
+ * @returns {Promise} Promise that resolves when the unassignment is complete
+ */
+const unassignDriverFromTruck = async (driverId) => {
+  try {
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    console.log(`Unassigning driver ${driverId} from truck`);
+
+    const response = await fetch(`${API_BASE_URL}/drivers/${driverId}/unassign-truck`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      // Handle specific authentication errors
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('Invalid token');
+      }
+      throw new Error(data.error || 'Failed to unassign driver from truck');
+    }
+
+    // Clear cache after unassignment
+    apiCache.clearAll();
+
+    return data;
+  } catch (error) {
+    console.error('Failed to unassign driver from truck:', error);
+    throw error;
+  }
+};
+
 // Export the service functions
 const DriverService = {
   getDrivers,
   getDriver,
   createDriver,
   updateDriver,
-  deleteDriver
+  deleteDriver,
+  assignDriverToTruck,
+  unassignDriverFromTruck
 };
 
 export default DriverService;

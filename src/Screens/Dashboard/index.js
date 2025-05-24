@@ -76,9 +76,20 @@ const Dashboard = () => {
             }
           }
 
+          // Format driver information
+          let driverName = 'Unassigned';
+          let driverId = null;
+          if (truck.currentDriver) {
+            driverName = `${truck.currentDriver.firstName} ${truck.currentDriver.lastName}`;
+            driverId = truck.currentDriver.id;
+          }
+
           return {
             ...truck,
-            lastUpdate: lastUpdateStr
+            lastUpdate: lastUpdateStr,
+            driver: driverName,
+            driverId: driverId,
+            currentDriverId: truck.currentDriverId
           };
         });
 
