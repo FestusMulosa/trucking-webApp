@@ -2,6 +2,8 @@
  * Client-side service for managing company emails through the server API
  */
 
+import apiCache from '../utils/apiCache';
+
 // API base URL - pointing to the dedicated server
 const API_BASE_URL = (process.env.REACT_APP_API_URL || 'https://trucking-server.onrender.com') + '/api';
 
@@ -38,13 +40,22 @@ const getCompanyId = () => {
 const getCompanyEmails = async () => {
   const token = getAuthToken();
   const companyId = getCompanyId();
-  
+
   if (!token || !companyId) {
     throw new Error('Authentication token or company ID not found');
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/companies/${companyId}/emails`, {
+    const url = `${API_BASE_URL}/companies/${companyId}/emails`;
+
+    // Check cache first
+    const cacheKey = apiCache.generateKey(url);
+    const cachedData = apiCache.get(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -57,7 +68,12 @@ const getCompanyEmails = async () => {
       throw new Error(errorData.message || 'Failed to fetch company emails');
     }
 
-    return await response.json();
+    const result = await response.json();
+
+    // Cache the result
+    apiCache.set(cacheKey, result, 3 * 60 * 1000); // Cache for 3 minutes
+
+    return result;
   } catch (error) {
     console.error('Error fetching company emails:', error);
     throw error;
@@ -75,7 +91,7 @@ const getCompanyEmails = async () => {
 const addCompanyEmail = async (emailData) => {
   const token = getAuthToken();
   const companyId = getCompanyId();
-  
+
   if (!token || !companyId) {
     throw new Error('Authentication token or company ID not found');
   }
@@ -95,6 +111,9 @@ const addCompanyEmail = async (emailData) => {
       throw new Error(errorData.message || 'Failed to add email address');
     }
 
+    // Clear company emails cache after adding
+    apiCache.clearAll(); // Clear all cache to ensure fresh data
+
     return await response.json();
   } catch (error) {
     console.error('Error adding company email:', error);
@@ -111,7 +130,7 @@ const addCompanyEmail = async (emailData) => {
 const updateCompanyEmail = async (emailId, emailData) => {
   const token = getAuthToken();
   const companyId = getCompanyId();
-  
+
   if (!token || !companyId) {
     throw new Error('Authentication token or company ID not found');
   }
@@ -131,6 +150,9 @@ const updateCompanyEmail = async (emailId, emailData) => {
       throw new Error(errorData.message || 'Failed to update email address');
     }
 
+    // Clear company emails cache after updating
+    apiCache.clearAll(); // Clear all cache to ensure fresh data
+
     return await response.json();
   } catch (error) {
     console.error('Error updating company email:', error);
@@ -146,7 +168,7 @@ const updateCompanyEmail = async (emailId, emailData) => {
 const deleteCompanyEmail = async (emailId) => {
   const token = getAuthToken();
   const companyId = getCompanyId();
-  
+
   if (!token || !companyId) {
     throw new Error('Authentication token or company ID not found');
   }
@@ -164,6 +186,9 @@ const deleteCompanyEmail = async (emailId) => {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to delete email address');
     }
+
+    // Clear company emails cache after deleting
+    apiCache.clearAll(); // Clear all cache to ensure fresh data
 
     return await response.json();
   } catch (error) {

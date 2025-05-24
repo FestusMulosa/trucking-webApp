@@ -2,6 +2,8 @@
  * Client-side service for managing maintenance records through the server API
  */
 
+import apiCache from '../utils/apiCache';
+
 // API base URL - pointing to the dedicated server
 const API_BASE_URL = (process.env.REACT_APP_API_URL || 'https://trucking-server.onrender.com') + '/api';
 
@@ -37,8 +39,18 @@ const getMaintenanceRecords = async (filters = {}) => {
     if (filters.endDate) queryParams.append('endDate', filters.endDate);
 
     const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    const url = `${API_BASE_URL}/maintenance${queryString}`;
 
-    const response = await fetch(`${API_BASE_URL}/maintenance${queryString}`, {
+    // Check cache first (only for GET requests without filters for better cache hit rate)
+    if (Object.keys(filters).length === 0) {
+      const cacheKey = apiCache.generateKey(url);
+      const cachedData = apiCache.get(cacheKey);
+      if (cachedData) {
+        return cachedData;
+      }
+    }
+
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -52,7 +64,15 @@ const getMaintenanceRecords = async (filters = {}) => {
       throw new Error(data.message || 'Failed to fetch maintenance records');
     }
 
-    return data.maintenanceRecords;
+    const result = data.maintenanceRecords;
+
+    // Cache the result (only if no filters for better cache hit rate)
+    if (Object.keys(filters).length === 0) {
+      const cacheKey = apiCache.generateKey(url);
+      apiCache.set(cacheKey, result, 2 * 60 * 1000); // Cache for 2 minutes
+    }
+
+    return result;
   } catch (error) {
     console.error('Failed to fetch maintenance records:', error);
     throw error;
@@ -119,6 +139,9 @@ const createMaintenanceRecord = async (maintenanceRecord) => {
       throw new Error(data.message || 'Failed to create maintenance record');
     }
 
+    // Clear maintenance cache after creating a record
+    apiCache.clearAll(); // Clear all cache to ensure fresh data
+
     return data.maintenanceRecord;
   } catch (error) {
     console.error('Failed to create maintenance record:', error);
@@ -154,6 +177,9 @@ const updateMaintenanceRecord = async (id, updates) => {
       throw new Error(data.message || 'Failed to update maintenance record');
     }
 
+    // Clear maintenance cache after updating a record
+    apiCache.clearAll(); // Clear all cache to ensure fresh data
+
     return data.maintenanceRecord;
   } catch (error) {
     console.error('Failed to update maintenance record:', error);
@@ -186,6 +212,9 @@ const deleteMaintenanceRecord = async (id) => {
     if (!response.ok) {
       throw new Error(data.message || 'Failed to delete maintenance record');
     }
+
+    // Clear maintenance cache after deleting a record
+    apiCache.clearAll(); // Clear all cache to ensure fresh data
 
     return data;
   } catch (error) {

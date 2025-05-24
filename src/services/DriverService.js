@@ -2,6 +2,8 @@
  * Client-side service for managing drivers through the server API
  */
 
+import apiCache from '../utils/apiCache';
+
 // API base URL - pointing to the dedicated server
 const API_BASE_URL = (process.env.REACT_APP_API_URL || 'https://trucking-server.onrender.com') + '/api';
 
@@ -44,9 +46,19 @@ const getDrivers = async (options = {}) => {
     if (options.includeCompany !== undefined) queryParams.append('includeCompany', options.includeCompany);
 
     const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    const url = `${API_BASE_URL}/drivers${queryString}`;
+
+    // Check cache first (only for GET requests without status filter for better cache hit rate)
+    if (!options.status) {
+      const cacheKey = apiCache.generateKey(url);
+      const cachedData = apiCache.get(cacheKey);
+      if (cachedData) {
+        return cachedData;
+      }
+    }
 
     console.log('Fetching drivers with token:', token ? 'Token exists' : 'No token');
-    const response = await fetch(`${API_BASE_URL}/drivers${queryString}`, {
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -104,15 +116,24 @@ const getDrivers = async (options = {}) => {
       companyId: driver.companyId
     }));
 
+    let result;
     // Return with pagination info if available
     if (paginationInfo) {
-      return {
+      result = {
         drivers: formattedDrivers,
         pagination: paginationInfo
       };
+    } else {
+      result = formattedDrivers;
     }
 
-    return formattedDrivers;
+    // Cache the result (only if no status filter for better cache hit rate)
+    if (!options.status) {
+      const cacheKey = apiCache.generateKey(url);
+      apiCache.set(cacheKey, result, 2 * 60 * 1000); // Cache for 2 minutes
+    }
+
+    return result;
   } catch (error) {
     console.error('Failed to fetch drivers:', error);
     throw error;
@@ -288,6 +309,10 @@ const createDriver = async (driver) => {
       companyId: data.companyId
     };
 
+    // Clear drivers cache after creating a driver
+    apiCache.clearAll(); // Clear all cache to ensure fresh data
+
+    console.log('Driver created successfully:', formattedDriver);
     return formattedDriver;
   } catch (error) {
     console.error('Failed to create driver:', error);
@@ -380,6 +405,10 @@ const updateDriver = async (id, updates) => {
       companyId: data.companyId
     };
 
+    // Clear drivers cache after updating a driver
+    apiCache.clearAll(); // Clear all cache to ensure fresh data
+
+    console.log('Driver updated successfully:', formattedDriver);
     return formattedDriver;
   } catch (error) {
     console.error('Failed to update driver:', error);
@@ -416,6 +445,9 @@ const deleteDriver = async (id) => {
       }
       throw new Error(data.message || data.error || 'Failed to delete driver');
     }
+
+    // Clear drivers cache after deleting a driver
+    apiCache.clearAll(); // Clear all cache to ensure fresh data
 
     return data;
   } catch (error) {
