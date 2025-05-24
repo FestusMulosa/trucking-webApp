@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useToast } from '../../hooks/use-toast';
 import EmailClient from '../../services/EmailClient';
+import EmailManagement from '../../components/EmailManagement/EmailManagement';
 import './Settings.css';
 
 const Settings = () => {
@@ -16,14 +17,6 @@ const Settings = () => {
       dailyReports: EmailClient.settings.dailyReports,
       fuelAlerts: true,
       locationAlerts: false
-    },
-    email: {
-      smtpHost: process.env.REACT_APP_SMTP_HOST || '',
-      smtpPort: process.env.REACT_APP_SMTP_PORT || '',
-      smtpUser: process.env.REACT_APP_SMTP_USER || '',
-      smtpPassword: process.env.REACT_APP_SMTP_PASS || '',
-      fromAddress: process.env.REACT_APP_SMTP_FROM || '',
-      defaultRecipient: process.env.REACT_APP_DEFAULT_RECIPIENT || ''
     },
     display: {
       darkMode: false,
@@ -41,38 +34,7 @@ const Settings = () => {
     }
   });
 
-  // Function to test email service
-  const handleTestEmail = async () => {
-    toast({
-      title: 'Sending Test Email',
-      description: 'Attempting to send a test email...',
-      variant: 'info'
-    });
 
-    try {
-      const result = await EmailClient.testEmailService();
-
-      if (result.success) {
-        toast({
-          title: 'Email Sent',
-          description: `Test email sent successfully (ID: ${result.messageId})`,
-          variant: 'success'
-        });
-      } else {
-        toast({
-          title: 'Email Failed',
-          description: `Failed to send test email: ${result.error || 'Unknown error'}`,
-          variant: 'destructive'
-        });
-      }
-    } catch (error) {
-      toast({
-        title: 'Email Failed',
-        description: `Error sending test email: ${error.message}`,
-        variant: 'destructive'
-      });
-    }
-  };
 
   const handleNotificationChange = (setting) => {
     setSettings({
@@ -126,30 +88,7 @@ const Settings = () => {
     });
   };
 
-  const handleEmailSettingChange = (setting, value) => {
-    setSettings({
-      ...settings,
-      email: {
-        ...settings.email,
-        [setting]: value
-      }
-    });
-  };
 
-  const handleSaveEmailSettings = (e) => {
-    e.preventDefault();
-
-    // In a real app, this would update the .env file or save to a database
-    // For now, we'll just show a notification
-    toast({
-      title: 'Email Settings Updated',
-      description: 'Email configuration has been updated successfully',
-      variant: 'success'
-    });
-
-    // Here you would typically restart the email service with the new settings
-    // or update environment variables
-  };
 
   const handleSaveAccount = (e) => {
     e.preventDefault();
@@ -382,139 +321,8 @@ const Settings = () => {
           </div>
         </div>
 
-        <div className="settings-card email-settings">
-          <h2>Email Configuration</h2>
-          <form onSubmit={handleSaveEmailSettings}>
-            <div className="form-group">
-              <label>SMTP Host</label>
-              <input
-                type="text"
-                value={settings.email.smtpHost}
-                onChange={(e) => handleEmailSettingChange('smtpHost', e.target.value)}
-                placeholder="e.g. smtp.example.com"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>SMTP Port</label>
-              <input
-                type="text"
-                value={settings.email.smtpPort}
-                onChange={(e) => handleEmailSettingChange('smtpPort', e.target.value)}
-                placeholder="e.g. 587"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>SMTP Username</label>
-              <input
-                type="text"
-                value={settings.email.smtpUser}
-                onChange={(e) => handleEmailSettingChange('smtpUser', e.target.value)}
-                placeholder="e.g. your-email@example.com"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>SMTP Password</label>
-              <input
-                type="password"
-                value={settings.email.smtpPassword}
-                onChange={(e) => handleEmailSettingChange('smtpPassword', e.target.value)}
-                placeholder="Your SMTP password"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>From Address</label>
-              <input
-                type="text"
-                value={settings.email.fromAddress}
-                onChange={(e) => handleEmailSettingChange('fromAddress', e.target.value)}
-                placeholder="e.g. Truck Fleet Tracker <noreply@example.com>"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Default Recipient</label>
-              <input
-                type="email"
-                value={settings.email.defaultRecipient}
-                onChange={(e) => handleEmailSettingChange('defaultRecipient', e.target.value)}
-                placeholder="e.g. admin@example.com"
-              />
-            </div>
-
-            <div className="form-actions">
-              <button
-                type="button"
-                className="test-button"
-                onClick={handleTestEmail}
-              >
-                Test Email
-              </button>
-              <button type="submit" className="save-button">
-                Save Configuration
-              </button>
-            </div>
-          </form>
-
-          <div className="email-notification-settings">
-            <h3>Email Notification Types</h3>
-            <div className="settings-list">
-              <div className="settings-item">
-                <div className="setting-info">
-                  <h4>Status Changes</h4>
-                  <p>Send emails when truck status changes</p>
-                </div>
-                <div className="setting-control">
-                  <label className="toggle">
-                    <input
-                      type="checkbox"
-                      checked={settings.notifications.statusChanges}
-                      onChange={() => handleNotificationChange('statusChanges')}
-                    />
-                    <span className="toggle-slider"></span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="settings-item">
-                <div className="setting-info">
-                  <h4>Maintenance Alerts</h4>
-                  <p>Send emails for upcoming maintenance</p>
-                </div>
-                <div className="setting-control">
-                  <label className="toggle">
-                    <input
-                      type="checkbox"
-                      checked={settings.notifications.maintenanceAlerts}
-                      onChange={() => handleNotificationChange('maintenanceAlerts')}
-                    />
-                    <span className="toggle-slider"></span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="settings-item">
-                <div className="setting-info">
-                  <h4>Daily Reports</h4>
-                  <p>Send daily summary reports via email</p>
-                </div>
-                <div className="setting-control">
-                  <label className="toggle">
-                    <input
-                      type="checkbox"
-                      checked={settings.notifications.dailyReports}
-                      onChange={() => handleNotificationChange('dailyReports')}
-                    />
-                    <span className="toggle-slider"></span>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Email Management Section */}
+        <EmailManagement />
 
         <div className="settings-card account-settings">
           <h2>Account Settings</h2>
