@@ -3,6 +3,7 @@
  */
 
 import apiCache from '../utils/apiCache';
+import { getCurrentUserCompanyId } from '../utils/companyUtils';
 
 // API base URL - pointing to the dedicated server
 const API_BASE_URL = (process.env.REACT_APP_API_URL || 'https://trucking-server.onrender.com') + '/api';
@@ -241,10 +242,16 @@ const createDriver = async (driver) => {
     console.log('Creating driver with data:', driver);
     console.log('API URL:', `${API_BASE_URL}/drivers`);
 
+    // Get the current user's company ID
+    const userCompanyId = getCurrentUserCompanyId();
+    if (!userCompanyId) {
+      throw new Error('User company information not found. Please log in again.');
+    }
+
     // Make sure companyId is set (required by the server)
     const driverWithCompany = {
       ...driver,
-      companyId: driver.companyId || 1 // Default to company ID 1 if not provided
+      companyId: driver.companyId || userCompanyId
     };
 
     const response = await fetch(`${API_BASE_URL}/drivers`, {
@@ -337,10 +344,16 @@ const updateDriver = async (id, updates) => {
     console.log(`Updating driver ${id} with data:`, updates);
     console.log('API URL:', `${API_BASE_URL}/drivers/${id}`);
 
+    // Get the current user's company ID
+    const userCompanyId = getCurrentUserCompanyId();
+    if (!userCompanyId) {
+      throw new Error('User company information not found. Please log in again.');
+    }
+
     // Make sure companyId is set (required by the server)
     const updatesWithCompany = {
       ...updates,
-      companyId: updates.companyId || 1 // Default to company ID 1 if not provided
+      companyId: updates.companyId || userCompanyId
     };
 
     const response = await fetch(`${API_BASE_URL}/drivers/${id}`, {

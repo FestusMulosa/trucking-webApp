@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/use-toast';
+import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/button';
 import { UserPlus, RefreshCw } from 'lucide-react';
 import AddDriverForm from '../../components/Drivers/AddDriverForm';
@@ -9,10 +10,12 @@ import DriverDetails from '../../components/Drivers/DriverDetails';
 import DriverList from '../../components/Drivers/DriverList';
 import TruckAssignmentModal from '../../components/Drivers/TruckAssignmentModal';
 import DriverService from '../../services/DriverService';
+import { getCurrentUser } from '../../utils/companyUtils';
 
 const DriversWithShadcn = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { logout, currentUser } = useAuth();
 
   // State for drivers data
   const [drivers, setDrivers] = useState([]);
@@ -29,6 +32,26 @@ const DriversWithShadcn = () => {
     try {
       setLoading(true);
       setError(null);
+
+      // Check if user is logged in and has company information
+      const user = currentUser || getCurrentUser();
+      if (!user) {
+        console.log('No user logged in, redirecting to login page');
+        navigate('/login');
+        return;
+      }
+
+      if (!user.companyId) {
+        console.error('User has no company ID, redirecting to login');
+        toast({
+          title: 'Account Error',
+          description: 'Your account is not associated with a company. Please contact support.',
+          variant: 'destructive'
+        });
+        logout();
+        navigate('/login');
+        return;
+      }
 
       // Fetch drivers with optimized parameters
       const data = await DriverService.getDrivers({
@@ -109,8 +132,8 @@ const DriversWithShadcn = () => {
         licenseNumber: newDriver.licenseNumber,
         licenseExpiry: newDriver.licenseExpiry || defaultLicenseExpiry,
         status: newDriver.status || 'inactive',
-        address: newDriver.address || '',
-        companyId: newDriver.companyId || 1
+        address: newDriver.address || ''
+        // companyId will be set automatically by the service using the current user's company
       };
 
       // Call API to create driver
@@ -170,8 +193,8 @@ const DriversWithShadcn = () => {
         licenseNumber: updatedDriver.licenseNumber,
         licenseExpiry: licenseExpiry || defaultLicenseExpiry,
         status: updatedDriver.status || 'inactive',
-        address: updatedDriver.address || '',
-        companyId: updatedDriver.companyId || 1
+        address: updatedDriver.address || ''
+        // companyId will be set automatically by the service using the current user's company
       };
 
       // Call API to update driver
@@ -245,8 +268,8 @@ const DriversWithShadcn = () => {
         licenseNumber: driverToUpdate.licenseNumber,
         licenseExpiry: licenseExpiry,
         status: newStatus,
-        address: driverToUpdate.address || '',
-        companyId: driverToUpdate.companyId || 1
+        address: driverToUpdate.address || ''
+        // companyId will be set automatically by the service using the current user's company
       };
 
       // Call API to update driver

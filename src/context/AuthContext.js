@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import apiCache from '../utils/apiCache';
 
 // Create the authentication context
 const AuthContext = createContext();
@@ -82,6 +83,10 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+
+    // Clear all cached API data to prevent data leakage between users
+    apiCache.clearAll();
+    console.log('User logged out and all cache cleared');
   };
 
   // Register function

@@ -52,7 +52,6 @@ const getSettings = async () => {
     const result = data.settings;
 
     // Cache the result
-    const cacheKey = apiCache.generateKey(url);
     apiCache.set(cacheKey, result, 5 * 60 * 1000); // Cache for 5 minutes (settings change less frequently)
 
     return result;
@@ -136,7 +135,6 @@ const getEmailRecipients = async () => {
     const result = data.recipients;
 
     // Cache the result
-    const cacheKey = apiCache.generateKey(url);
     apiCache.set(cacheKey, result, 3 * 60 * 1000); // Cache for 3 minutes
 
     return result;

@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/use-toast';
+import { useAuth } from '../../context/AuthContext';
 import MaintenanceService from '../../services/MaintenanceService';
 import TruckService from '../../services/TruckService';
+import { getCurrentUser } from '../../utils/companyUtils';
 import ScheduleMaintenanceForm from './ScheduleMaintenanceForm';
 import './Maintenance.css';
 
 const Maintenance = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { logout, currentUser } = useAuth();
 
   // State for maintenance records
   const [maintenanceRecords, setMaintenanceRecords] = useState([]);
@@ -31,6 +34,26 @@ const Maintenance = () => {
       try {
         setLoading(true);
         setError(null);
+
+        // Check if user is logged in and has company information
+        const user = currentUser || getCurrentUser();
+        if (!user) {
+          console.log('No user logged in, redirecting to login page');
+          navigate('/login');
+          return;
+        }
+
+        if (!user.companyId) {
+          console.error('User has no company ID, redirecting to login');
+          toast({
+            title: 'Account Error',
+            description: 'Your account is not associated with a company. Please contact support.',
+            variant: 'destructive'
+          });
+          logout();
+          navigate('/login');
+          return;
+        }
 
         // Fetch all maintenance records
         const records = await MaintenanceService.getMaintenanceRecords();

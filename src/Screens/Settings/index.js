@@ -1,19 +1,74 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '../../hooks/use-toast';
+import { useAuth } from '../../context/AuthContext';
 import EmailManagement from '../../components/EmailManagement/EmailManagement';
+import SettingsService from '../../services/SettingsService';
+import { getCurrentUser } from '../../utils/companyUtils';
 import './Settings.css';
 
 const Settings = () => {
   const { toast } = useToast();
+  const { currentUser } = useAuth();
 
   const [settings, setSettings] = useState({
     account: {
-      name: 'Admin User',
-      email: process.env.REACT_APP_DEFAULT_RECIPIENT || 'admin@trucktracker.com',
-      role: 'Administrator',
-      company: 'TruckTracker Inc.'
+      name: '',
+      email: '',
+      role: '',
+      company: ''
     }
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Load user data and settings when component mounts
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Get user data from context or localStorage
+        const user = currentUser || getCurrentUser();
+        if (!user) {
+          throw new Error('User information not found. Please log in again.');
+        }
+
+        // Update account settings with user data
+        setSettings({
+          account: {
+            name: `${user.firstName} ${user.lastName}`,
+            email: user.email,
+            role: user.role,
+            company: user.companyName || 'Loading...' // Company name might not be in user object
+          }
+        });
+
+        // Try to load additional settings from the API
+        try {
+          const apiSettings = await SettingsService.getSettings();
+          // Merge API settings with user data if needed
+          console.log('Loaded settings from API:', apiSettings);
+        } catch (settingsError) {
+          console.warn('Could not load additional settings:', settingsError.message);
+          // Continue with user data only
+        }
+
+      } catch (err) {
+        console.error('Error loading user data:', err);
+        setError(err.message);
+        toast({
+          title: 'Error',
+          description: err.message,
+          variant: 'destructive'
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserData();
+  }, [currentUser, toast]);
 
   const handleSaveAccount = (e) => {
     e.preventDefault();
@@ -23,6 +78,28 @@ const Settings = () => {
       variant: 'success'
     });
   };
+
+  if (loading) {
+    return (
+      <div className="settings-container">
+        <h1>Settings</h1>
+        <div className="loading-container">
+          <p>Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="settings-container">
+        <h1>Settings</h1>
+        <div className="error-container">
+          <p className="error-message">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="settings-container">

@@ -4,6 +4,7 @@ import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../context/AuthContext';
 import EmailClient from '../../services/EmailClient';
 import TruckService from '../../services/TruckService';
+import { getCurrentUser } from '../../utils/companyUtils';
 import DriverAssignmentModal from '../../components/Trucks/DriverAssignmentModal';
 import './Trucks.css';
 
@@ -11,7 +12,7 @@ const Trucks = () => {
   const { statusFilter } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { logout } = useAuth();
+  const { logout, currentUser } = useAuth();
 
   // State for trucks and loading/error status
   const [trucks, setTrucks] = useState([]);
@@ -24,6 +25,26 @@ const Trucks = () => {
       try {
         setIsLoading(true);
         setError(null);
+
+        // Check if user is logged in and has company information
+        const user = currentUser || getCurrentUser();
+        if (!user) {
+          console.log('No user logged in, redirecting to login page');
+          navigate('/login');
+          return;
+        }
+
+        if (!user.companyId) {
+          console.error('User has no company ID, redirecting to login');
+          toast({
+            title: 'Account Error',
+            description: 'Your account is not associated with a company. Please contact support.',
+            variant: 'destructive'
+          });
+          logout();
+          navigate('/login');
+          return;
+        }
 
         // Fetch trucks with optimized parameters
         const data = await TruckService.getTrucks({

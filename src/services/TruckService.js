@@ -3,6 +3,7 @@
  */
 
 import apiCache from '../utils/apiCache';
+import { getCurrentUserCompanyId } from '../utils/companyUtils';
 
 // API base URL - pointing to the dedicated server
 const API_BASE_URL = (process.env.REACT_APP_API_URL || 'https://trucking-server.onrender.com') + '/api';
@@ -153,10 +154,16 @@ const createTruck = async (truck) => {
     console.log('Creating truck with data:', truck);
     console.log('API URL:', `${API_BASE_URL}/trucks`);
 
+    // Get the current user's company ID
+    const userCompanyId = getCurrentUserCompanyId();
+    if (!userCompanyId) {
+      throw new Error('User company information not found. Please log in again.');
+    }
+
     // Make sure companyId is set (required by the server)
     const truckWithCompany = {
       ...truck,
-      companyId: truck.companyId || 1 // Default to company ID 1 if not provided
+      companyId: truck.companyId || userCompanyId
     };
 
     const response = await fetch(`${API_BASE_URL}/trucks`, {

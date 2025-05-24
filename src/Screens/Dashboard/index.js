@@ -4,6 +4,7 @@ import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../context/AuthContext';
 import EmailClient from '../../services/EmailClient';
 import TruckService from '../../services/TruckService';
+import { getCurrentUser } from '../../utils/companyUtils';
 import { StatusCard } from '../../components/ui/status-card';
 import { TruckList } from '../../components/ui/truck-list';
 import {
@@ -34,15 +35,24 @@ const Dashboard = () => {
       try {
         setIsLoading(true);
 
-        // Check if user is logged in
-        if (!currentUser) {
-          // Check localStorage as a fallback
-          const storedUser = localStorage.getItem('user');
-          if (!storedUser) {
-            console.log('No user logged in, redirecting to login page');
-            navigate('/login');
-            return;
-          }
+        // Check if user is logged in and has company information
+        const user = currentUser || getCurrentUser();
+        if (!user) {
+          console.log('No user logged in, redirecting to login page');
+          navigate('/login');
+          return;
+        }
+
+        if (!user.companyId) {
+          console.error('User has no company ID, redirecting to login');
+          toast({
+            title: 'Account Error',
+            description: 'Your account is not associated with a company. Please contact support.',
+            variant: 'destructive'
+          });
+          logout();
+          navigate('/login');
+          return;
         }
 
         const data = await TruckService.getTrucks();

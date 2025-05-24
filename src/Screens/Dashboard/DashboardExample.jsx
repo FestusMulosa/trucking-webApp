@@ -20,14 +20,6 @@ const DashboardExample = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTruck, setSelectedTruck] = useState(null);
 
-  // Sample data - replace with your actual data
-  const trucks = [
-    { id: 1, name: 'Truck-001', status: 'active', route: 'Lusaka-Solwezi', lastUpdate: '10 min ago' },
-    { id: 2, name: 'Truck-002', status: 'maintenance', route: 'Ndola-Kitwe', lastUpdate: '25 min ago' },
-    { id: 3, name: 'Truck-003', status: 'inactive', route: 'Lusaka-Livingstone', lastUpdate: '1 hour ago' },
-    { id: 4, name: 'Truck-004', status: 'active', route: 'Kitwe-Chingola', lastUpdate: '45 min ago' },
-    { id: 5, name: 'Truck-005', status: 'active', route: 'Lusaka-Chipata', lastUpdate: '30 min ago' },
-  ];
 
   // Calculate counts
   const activeTrucks = trucks.filter(truck => truck.status === 'active').length;
