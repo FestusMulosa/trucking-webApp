@@ -2,6 +2,8 @@
  * Client-side service for managing trucks through the server API
  */
 
+import apiCache from '../utils/apiCache';
+
 // API base URL - pointing to the dedicated server
 const API_BASE_URL = (process.env.REACT_APP_API_URL || 'https://trucking-server.onrender.com') + '/api';
 
@@ -21,18 +23,42 @@ const getAuthToken = () => {
 };
 
 /**
- * Get all trucks for the current company
- * @returns {Promise} Promise that resolves with the trucks
+ * Get all trucks for the current company with pagination and filtering
+ * @param {Object} options - Query options
+ * @param {number} options.page - Page number (default: 1)
+ * @param {number} options.limit - Items per page (default: 50)
+ * @param {string} options.status - Filter by status
+ * @param {boolean} options.includeCompany - Include company data (default: false)
+ * @returns {Promise} Promise that resolves with the trucks and pagination info
  */
-const getTrucks = async () => {
+const getTrucks = async (options = {}) => {
   try {
     const token = getAuthToken();
     if (!token) {
       throw new Error('Authentication required');
     }
 
+    // Build query parameters
+    const queryParams = new URLSearchParams();
+    if (options.page) queryParams.append('page', options.page);
+    if (options.limit) queryParams.append('limit', options.limit);
+    if (options.status) queryParams.append('status', options.status);
+    if (options.includeCompany !== undefined) queryParams.append('includeCompany', options.includeCompany);
+
+    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    const url = `${API_BASE_URL}/trucks${queryString}`;
+
+    // Check cache first (only for GET requests without status filter for better cache hit rate)
+    if (!options.status) {
+      const cacheKey = apiCache.generateKey(url);
+      const cachedData = apiCache.get(cacheKey);
+      if (cachedData) {
+        return cachedData;
+      }
+    }
+
     console.log('Fetching trucks with token:', token ? 'Token exists' : 'No token');
-    const response = await fetch(`${API_BASE_URL}/trucks`, {
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -52,7 +78,22 @@ const getTrucks = async () => {
       throw new Error(data.message || 'Failed to fetch trucks');
     }
 
-    return data;
+    let result;
+    // Return trucks array for backward compatibility if no pagination
+    if (data.trucks && data.pagination) {
+      result = data;
+    } else {
+      // Fallback for old API response format
+      result = Array.isArray(data) ? data : [];
+    }
+
+    // Cache the result (only if no status filter for better cache hit rate)
+    if (!options.status) {
+      const cacheKey = apiCache.generateKey(url);
+      apiCache.set(cacheKey, result, 2 * 60 * 1000); // Cache for 2 minutes
+    }
+
+    return result;
   } catch (error) {
     console.error('Failed to fetch trucks:', error);
     throw error;
@@ -155,6 +196,9 @@ const createTruck = async (truck) => {
       throw new Error(data.message || 'Failed to create truck');
     }
 
+    // Clear trucks cache after creating a new truck
+    apiCache.clearAll(); // Clear all cache to ensure fresh data
+
     console.log('Truck created successfully:', data);
     return data;
   } catch (error) {
@@ -223,6 +267,9 @@ const updateTruck = async (id, updates) => {
       throw new Error(data.message || 'Failed to update truck');
     }
 
+    // Clear trucks cache after updating a truck
+    apiCache.clearAll(); // Clear all cache to ensure fresh data
+
     console.log('Truck updated successfully:', data);
     return data;
   } catch (error) {
@@ -260,6 +307,9 @@ const deleteTruck = async (id) => {
       }
       throw new Error(data.message || 'Failed to delete truck');
     }
+
+    // Clear trucks cache after deleting a truck
+    apiCache.clearAll(); // Clear all cache to ensure fresh data
 
     return data;
   } catch (error) {

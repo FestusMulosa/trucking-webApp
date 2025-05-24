@@ -28,8 +28,21 @@ const DriversWithShadcn = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await DriverService.getDrivers();
-      setDrivers(data);
+
+      // Fetch drivers with optimized parameters
+      const data = await DriverService.getDrivers({
+        limit: 100, // Fetch more drivers at once to reduce API calls
+        includeCompany: false // Don't include company data unless needed
+      });
+
+      // Handle both paginated and non-paginated responses
+      if (data.drivers && Array.isArray(data.drivers)) {
+        setDrivers(data.drivers);
+      } else if (Array.isArray(data)) {
+        setDrivers(data);
+      } else {
+        setDrivers([]);
+      }
     } catch (error) {
       console.error('Error fetching drivers:', error);
       setError(error.message || 'Failed to fetch drivers');

@@ -21,18 +21,32 @@ const getAuthToken = () => {
 };
 
 /**
- * Get all drivers for the current company
- * @returns {Promise} Promise that resolves with the drivers
+ * Get all drivers for the current company with pagination and filtering
+ * @param {Object} options - Query options
+ * @param {number} options.page - Page number (default: 1)
+ * @param {number} options.limit - Items per page (default: 50)
+ * @param {string} options.status - Filter by status
+ * @param {boolean} options.includeCompany - Include company data (default: false)
+ * @returns {Promise} Promise that resolves with the drivers and pagination info
  */
-const getDrivers = async () => {
+const getDrivers = async (options = {}) => {
   try {
     const token = getAuthToken();
     if (!token) {
       throw new Error('Authentication required');
     }
 
+    // Build query parameters
+    const queryParams = new URLSearchParams();
+    if (options.page) queryParams.append('page', options.page);
+    if (options.limit) queryParams.append('limit', options.limit);
+    if (options.status) queryParams.append('status', options.status);
+    if (options.includeCompany !== undefined) queryParams.append('includeCompany', options.includeCompany);
+
+    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+
     console.log('Fetching drivers with token:', token ? 'Token exists' : 'No token');
-    const response = await fetch(`${API_BASE_URL}/drivers`, {
+    const response = await fetch(`${API_BASE_URL}/drivers${queryString}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -52,8 +66,21 @@ const getDrivers = async () => {
       throw new Error(data.message || 'Failed to fetch drivers');
     }
 
+    // Handle paginated response
+    let driversArray = [];
+    let paginationInfo = null;
+
+    if (data.drivers && data.pagination) {
+      driversArray = data.drivers;
+      paginationInfo = data.pagination;
+    } else if (Array.isArray(data)) {
+      driversArray = data;
+    } else {
+      driversArray = [];
+    }
+
     // Format driver data for frontend use
-    const formattedDrivers = data.map(driver => ({
+    const formattedDrivers = driversArray.map(driver => ({
       id: driver.id,
       name: `${driver.firstName} ${driver.lastName}`,
       firstName: driver.firstName,
@@ -76,6 +103,14 @@ const getDrivers = async () => {
       notes: driver.notes,
       companyId: driver.companyId
     }));
+
+    // Return with pagination info if available
+    if (paginationInfo) {
+      return {
+        drivers: formattedDrivers,
+        pagination: paginationInfo
+      };
+    }
 
     return formattedDrivers;
   } catch (error) {

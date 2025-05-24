@@ -24,10 +24,22 @@ const Trucks = () => {
         setIsLoading(true);
         setError(null);
 
-        const data = await TruckService.getTrucks();
+        // Fetch trucks with optimized parameters
+        const data = await TruckService.getTrucks({
+          limit: 100, // Fetch more trucks at once to reduce API calls
+          includeCompany: false // Don't include company data unless needed
+        });
+
+        // Handle both paginated and non-paginated responses
+        let trucksArray = [];
+        if (data.trucks && Array.isArray(data.trucks)) {
+          trucksArray = data.trucks;
+        } else if (Array.isArray(data)) {
+          trucksArray = data;
+        }
 
         // Format the lastUpdate field for display
-        const formattedTrucks = data.map(truck => {
+        const formattedTrucks = trucksArray.map(truck => {
           // Calculate a human-readable lastUpdate string
           let lastUpdateStr = 'Unknown';
           if (truck.lastUpdate) {
@@ -88,7 +100,7 @@ const Trucks = () => {
     };
 
     fetchTrucks();
-  }, [toast, navigate, logout]);
+  }, []); // Remove dependencies to prevent unnecessary re-fetches
 
   const [selectedTruck, setSelectedTruck] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -548,7 +560,7 @@ const Trucks = () => {
               <span className="truck-date">{truck.comesaExpiryDate ? new Date(truck.comesaExpiryDate).toLocaleDateString() : 'N/A'}</span>
               <span className="truck-update">{truck.lastUpdate}</span>
               <span className="truck-actions">
-               
+
               </span>
             </div>
           ))}
