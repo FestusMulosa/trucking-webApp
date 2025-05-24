@@ -47,8 +47,16 @@ const Dashboard = () => {
 
         const data = await TruckService.getTrucks();
 
+        // Handle both paginated and non-paginated responses
+        let trucksArray = [];
+        if (data.trucks && Array.isArray(data.trucks)) {
+          trucksArray = data.trucks;
+        } else if (Array.isArray(data)) {
+          trucksArray = data;
+        }
+
         // Format the lastUpdate field for display
-        const formattedTrucks = data.map(truck => {
+        const formattedTrucks = trucksArray.map(truck => {
           // Calculate a human-readable lastUpdate string
           let lastUpdateStr = 'Unknown';
           if (truck.lastUpdate) {
