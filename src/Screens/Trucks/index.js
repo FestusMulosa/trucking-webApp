@@ -4,13 +4,15 @@ import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../context/AuthContext';
 import EmailClient from '../../services/EmailClient';
 import TruckService from '../../services/TruckService';
+import { getCurrentUser } from '../../utils/companyUtils';
+import DriverAssignmentModal from '../../components/Trucks/DriverAssignmentModal';
 import './Trucks.css';
 
 const Trucks = () => {
   const { statusFilter } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { logout } = useAuth();
+  const { logout, currentUser } = useAuth();
 
   // State for trucks and loading/error status
   const [trucks, setTrucks] = useState([]);
@@ -24,10 +26,42 @@ const Trucks = () => {
         setIsLoading(true);
         setError(null);
 
-        const data = await TruckService.getTrucks();
+        // Check if user is logged in and has company information
+        const user = currentUser || getCurrentUser();
+        if (!user) {
+          console.log('No user logged in, redirecting to login page');
+          navigate('/login');
+          return;
+        }
+
+        if (!user.companyId) {
+          console.error('User has no company ID, redirecting to login');
+          toast({
+            title: 'Account Error',
+            description: 'Your account is not associated with a company. Please contact support.',
+            variant: 'destructive'
+          });
+          logout();
+          navigate('/login');
+          return;
+        }
+
+        // Fetch trucks with optimized parameters
+        const data = await TruckService.getTrucks({
+          limit: 100, // Fetch more trucks at once to reduce API calls
+          includeCompany: false // Don't include company data unless needed
+        });
+
+        // Handle both paginated and non-paginated responses
+        let trucksArray = [];
+        if (data.trucks && Array.isArray(data.trucks)) {
+          trucksArray = data.trucks;
+        } else if (Array.isArray(data)) {
+          trucksArray = data;
+        }
 
         // Format the lastUpdate field for display
-        const formattedTrucks = data.map(truck => {
+        const formattedTrucks = trucksArray.map(truck => {
           // Calculate a human-readable lastUpdate string
           let lastUpdateStr = 'Unknown';
           if (truck.lastUpdate) {
@@ -47,9 +81,20 @@ const Trucks = () => {
             }
           }
 
+          // Format driver information
+          let driverName = 'Unassigned';
+          let driverId = null;
+          if (truck.currentDriver) {
+            driverName = `${truck.currentDriver.firstName} ${truck.currentDriver.lastName}`;
+            driverId = truck.currentDriver.id;
+          }
+
           return {
             ...truck,
-            lastUpdate: lastUpdateStr
+            lastUpdate: lastUpdateStr,
+            driver: driverName,
+            driverId: driverId,
+            currentDriverId: truck.currentDriverId
           };
         });
 
@@ -88,12 +133,14 @@ const Trucks = () => {
     };
 
     fetchTrucks();
-  }, [toast, navigate, logout]);
+  }, []); // Remove dependencies to prevent unnecessary re-fetches
 
   const [selectedTruck, setSelectedTruck] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDriverAssignmentOpen, setIsDriverAssignmentOpen] = useState(false);
+  const [assignmentTruck, setAssignmentTruck] = useState(null);
   const [filteredTrucks, setFilteredTrucks] = useState([]);
   const [activeFilter, setActiveFilter] = useState(null);
   const [newTruck, setNewTruck] = useState({
@@ -143,6 +190,83 @@ const Trucks = () => {
     e.stopPropagation(); // Prevent triggering the row click
     // Navigate to the maintenance details page for this truck
     navigate(`/maintenance/truck/${truck.id}`);
+  };
+
+  const handleAssignDriver = (e, truck) => {
+    e.stopPropagation(); // Prevent triggering the row click
+    setAssignmentTruck(truck);
+    setIsDriverAssignmentOpen(true);
+  };
+
+  const handleDriverAssignmentComplete = () => {
+    // Refresh the trucks list after assignment
+    const fetchTrucks = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // Fetch trucks with optimized parameters
+        const data = await TruckService.getTrucks({
+          limit: 100, // Fetch more trucks at once to reduce API calls
+          includeCompany: false // Don't include company data unless needed
+        });
+
+        // Handle both paginated and non-paginated responses
+        let trucksArray = [];
+        if (data.trucks && Array.isArray(data.trucks)) {
+          trucksArray = data.trucks;
+        } else if (Array.isArray(data)) {
+          trucksArray = data;
+        }
+
+        // Format the lastUpdate field for display
+        const formattedTrucks = trucksArray.map(truck => {
+          // Calculate a human-readable lastUpdate string
+          let lastUpdateStr = 'Unknown';
+          if (truck.lastUpdate) {
+            const lastUpdateDate = new Date(truck.lastUpdate);
+            const now = new Date();
+            const diffMs = now - lastUpdateDate;
+            const diffMins = Math.floor(diffMs / 60000);
+
+            if (diffMins < 60) {
+              lastUpdateStr = `${diffMins} min ago`;
+            } else if (diffMins < 1440) {
+              const hours = Math.floor(diffMins / 60);
+              lastUpdateStr = `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            } else {
+              const days = Math.floor(diffMins / 1440);
+              lastUpdateStr = `${days} day${days > 1 ? 's' : ''} ago`;
+            }
+          }
+
+          // Format driver information
+          let driverName = 'Unassigned';
+          let driverId = null;
+          if (truck.currentDriver) {
+            driverName = `${truck.currentDriver.firstName} ${truck.currentDriver.lastName}`;
+            driverId = truck.currentDriver.id;
+          }
+
+          return {
+            ...truck,
+            lastUpdate: lastUpdateStr,
+            driver: driverName,
+            driverId: driverId,
+            currentDriverId: truck.currentDriverId
+          };
+        });
+
+        setTrucks(formattedTrucks);
+      } catch (err) {
+        console.error('Error fetching trucks:', err);
+        setError('Failed to load trucks. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTrucks();
   };
 
   const closeModal = () => {
@@ -548,7 +672,13 @@ const Trucks = () => {
               <span className="truck-date">{truck.comesaExpiryDate ? new Date(truck.comesaExpiryDate).toLocaleDateString() : 'N/A'}</span>
               <span className="truck-update">{truck.lastUpdate}</span>
               <span className="truck-actions">
-               
+                <button
+                  className="assign-driver-btn"
+                  onClick={(e) => handleAssignDriver(e, truck)}
+                  title="Assign Driver"
+                >
+                  <i className="fas fa-user-plus"></i>
+                </button>
               </span>
             </div>
           ))}
@@ -973,6 +1103,14 @@ const Trucks = () => {
           </div>
         </div>
       )}
+
+      {/* Driver Assignment Modal */}
+      <DriverAssignmentModal
+        isOpen={isDriverAssignmentOpen}
+        onClose={() => setIsDriverAssignmentOpen(false)}
+        truck={assignmentTruck}
+        onAssignmentComplete={handleDriverAssignmentComplete}
+      />
     </div>
   );
 };

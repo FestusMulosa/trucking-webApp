@@ -1,18 +1,18 @@
 import React from 'react';
-import { 
-  Table, 
-  TableHeader, 
-  TableBody, 
-  TableRow, 
-  TableHead, 
-  TableCell 
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell
 } from '../../components/ui/table';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
-import { Info } from 'lucide-react';
+import { Info, Truck } from 'lucide-react';
 
-const DriverList = ({ drivers, onDriverClick }) => {
+const DriverList = ({ drivers, onDriverClick, onAssignTruck }) => {
   return (
     <Card className="mb-8">
       <CardContent className="p-0">
@@ -30,7 +30,7 @@ const DriverList = ({ drivers, onDriverClick }) => {
           </TableHeader>
           <TableBody>
             {drivers.map(driver => (
-              <TableRow 
+              <TableRow
                 key={driver.id}
                 className="cursor-pointer"
                 onClick={() => onDriverClick(driver)}
@@ -44,17 +44,32 @@ const DriverList = ({ drivers, onDriverClick }) => {
                 </TableCell>
                 <TableCell className="hidden md:table-cell">{driver.lastUpdate}</TableCell>
                 <TableCell className="text-right">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDriverClick(driver);
-                    }}
-                  >
-                    <Info className="h-4 w-4" />
-                    <span className="sr-only">Details</span>
-                  </Button>
+                  <div className="flex gap-1 justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAssignTruck && onAssignTruck(driver);
+                      }}
+                      title="Assign Truck"
+                    >
+                      <Truck className="h-4 w-4" />
+                      <span className="sr-only">Assign Truck</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDriverClick(driver);
+                      }}
+                      title="View Details"
+                    >
+                      <Info className="h-4 w-4" />
+                      <span className="sr-only">Details</span>
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

@@ -2,8 +2,10 @@
  * Client-side service for managing settings through the server API
  */
 
+import apiCache from '../utils/apiCache';
+
 // API base URL - pointing to the dedicated server
-const API_BASE_URL = (process.env.REACT_APP_API_URL || 'http://localhost:3001') + '/api';
+const API_BASE_URL = (process.env.REACT_APP_API_URL || 'https://trucking-server.onrender.com') + '/api';
 
 /**
  * Get the authentication token from local storage
@@ -24,7 +26,16 @@ const getSettings = async () => {
       throw new Error('Authentication required');
     }
 
-    const response = await fetch(`${API_BASE_URL}/settings`, {
+    const url = `${API_BASE_URL}/settings`;
+
+    // Check cache first
+    const cacheKey = apiCache.generateKey(url);
+    const cachedData = apiCache.get(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -38,7 +49,12 @@ const getSettings = async () => {
       throw new Error(data.message || 'Failed to fetch settings');
     }
 
-    return data.settings;
+    const result = data.settings;
+
+    // Cache the result
+    apiCache.set(cacheKey, result, 5 * 60 * 1000); // Cache for 5 minutes (settings change less frequently)
+
+    return result;
   } catch (error) {
     console.error('Failed to fetch settings:', error);
     throw error;
@@ -72,6 +88,9 @@ const updateSettings = async (settings) => {
       throw new Error(data.message || 'Failed to update settings');
     }
 
+    // Clear settings cache after updating
+    apiCache.clearAll(); // Clear all cache to ensure fresh data
+
     return data;
   } catch (error) {
     console.error('Failed to update settings:', error);
@@ -90,7 +109,16 @@ const getEmailRecipients = async () => {
       throw new Error('Authentication required');
     }
 
-    const response = await fetch(`${API_BASE_URL}/email-recipients`, {
+    const url = `${API_BASE_URL}/email-recipients`;
+
+    // Check cache first
+    const cacheKey = apiCache.generateKey(url);
+    const cachedData = apiCache.get(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -104,7 +132,12 @@ const getEmailRecipients = async () => {
       throw new Error(data.message || 'Failed to fetch email recipients');
     }
 
-    return data.recipients;
+    const result = data.recipients;
+
+    // Cache the result
+    apiCache.set(cacheKey, result, 3 * 60 * 1000); // Cache for 3 minutes
+
+    return result;
   } catch (error) {
     console.error('Failed to fetch email recipients:', error);
     throw error;

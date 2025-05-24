@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { Select } from '../../components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -61,10 +60,10 @@ const EditTruckForm = ({ isOpen, onClose, onUpdateTruck, truck }) => {
     try {
       // Call the parent component's onUpdateTruck function
       await onUpdateTruck(editTruck);
-      
+
       // Close the dialog
       onClose();
-      
+
       toast({
         title: 'Truck Updated',
         description: `${editTruck.name} has been updated successfully`,
@@ -113,7 +112,7 @@ const EditTruckForm = ({ isOpen, onClose, onUpdateTruck, truck }) => {
               />
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="edit-make">Make</Label>
@@ -136,7 +135,7 @@ const EditTruckForm = ({ isOpen, onClose, onUpdateTruck, truck }) => {
               />
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="edit-year">Year</Label>
@@ -160,7 +159,7 @@ const EditTruckForm = ({ isOpen, onClose, onUpdateTruck, truck }) => {
               />
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="edit-cargoType">Cargo Type</Label>
@@ -187,7 +186,7 @@ const EditTruckForm = ({ isOpen, onClose, onUpdateTruck, truck }) => {
               </select>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="edit-roadTaxDate">Road Tax Expiry</Label>
@@ -210,7 +209,7 @@ const EditTruckForm = ({ isOpen, onClose, onUpdateTruck, truck }) => {
               />
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="edit-fitnessDate">Fitness Expiry</Label>
@@ -233,7 +232,7 @@ const EditTruckForm = ({ isOpen, onClose, onUpdateTruck, truck }) => {
               />
             </div>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="edit-nextMaintenance">Next Maintenance</Label>
             <Input

@@ -28,7 +28,13 @@ const ScheduleMaintenanceForm = ({ onClose, onSuccess }) => {
     const fetchTrucks = async () => {
       try {
         setLoading(true);
-        const response = await TruckService.getTrucks();
+
+        // Fetch trucks with optimized parameters
+        const response = await TruckService.getTrucks({
+          limit: 200, // Fetch more trucks for the dropdown
+          includeCompany: false // Don't include company data
+        });
+
         // Check the structure of the response and extract trucks
         console.log('Trucks response:', response);
         if (response && Array.isArray(response)) {
@@ -56,7 +62,7 @@ const ScheduleMaintenanceForm = ({ onClose, onSuccess }) => {
     };
 
     fetchTrucks();
-  }, [toast]);
+  }, []); // Remove toast dependency to prevent unnecessary re-fetches
 
   // Effect to filter trucks based on search query
   useEffect(() => {

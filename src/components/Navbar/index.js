@@ -4,6 +4,7 @@ import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../ui/button';
 import { BellIcon, MenuIcon, XIcon, UserIcon, LogOutIcon } from 'lucide-react';
+import { getRoleDisplayName, shouldShowAdminFeatures, shouldShowSuperAdminFeatures, isManager } from '../../utils/roleUtils';
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -112,24 +113,28 @@ const Navbar = () => {
               Maintenance
             </Link>
           </li>
-          <li>
-            <Link
-              to="/reports"
-              className={`block px-4 py-2 rounded-md ${location.pathname === '/reports' ? 'bg-primary-foreground/10 font-medium' : 'hover:bg-primary-foreground/5'}`}
-              onClick={closeMenu}
-            >
-              Reports
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/settings"
-              className={`block px-4 py-2 rounded-md ${location.pathname === '/settings' ? 'bg-primary-foreground/10 font-medium' : 'hover:bg-primary-foreground/5'}`}
-              onClick={closeMenu}
-            >
-              Settings
-            </Link>
-          </li>
+          {isManager(currentUser) && (
+            <li>
+              <Link
+                to="/reports"
+                className={`block px-4 py-2 rounded-md ${location.pathname === '/reports' ? 'bg-primary-foreground/10 font-medium' : 'hover:bg-primary-foreground/5'}`}
+                onClick={closeMenu}
+              >
+                Reports
+              </Link>
+            </li>
+          )}
+          {shouldShowAdminFeatures(currentUser) && (
+            <li>
+              <Link
+                to="/settings"
+                className={`block px-4 py-2 rounded-md ${location.pathname === '/settings' ? 'bg-primary-foreground/10 font-medium' : 'hover:bg-primary-foreground/5'}`}
+                onClick={closeMenu}
+              >
+                Settings
+              </Link>
+            </li>
+          )}
           <li>
             <Button
               variant="ghost"
@@ -152,12 +157,20 @@ const Navbar = () => {
 
         <div className="hidden md:flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className="font-medium">
-              {currentUser?.firstName ||
-               (localStorage.getItem('user') ?
-                 JSON.parse(localStorage.getItem('user'))?.firstName :
-                 'User')}
-            </span>
+            <div className="text-right">
+              <div className="font-medium">
+                {currentUser?.firstName ||
+                 (localStorage.getItem('user') ?
+                   JSON.parse(localStorage.getItem('user'))?.firstName :
+                   'User')}
+              </div>
+              <div className="text-xs text-primary-foreground/70">
+                {getRoleDisplayName(currentUser?.role ||
+                  (localStorage.getItem('user') ?
+                    JSON.parse(localStorage.getItem('user'))?.role :
+                    'user'))}
+              </div>
+            </div>
             <div className="h-9 w-9 rounded-full bg-primary-foreground/20 flex items-center justify-center">
               <UserIcon className="h-5 w-5" />
             </div>
